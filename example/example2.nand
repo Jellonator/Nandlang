@@ -1,0 +1,132 @@
+// Not function implemented with NAND logic
+// Has one input called 'in' and one output called 'out'.
+function not(in : out) {
+	out = in ! in;
+}
+
+// And function
+function and(a, b : out) {
+	out = not(a ! b);
+}
+
+// Or function
+function or(a, b : out) {
+	out = not(a) ! not(b);
+}
+
+// Outputs 1 if both a and b are equal
+function eq(a, b : out) {
+	out = not(xor(a, b));
+}
+
+// Outputs 1 if a is greater than or equal to b
+function ge(a, b : out) {
+	out = not(and(b, not(a)));
+}
+
+// Xor
+function xor(a, b : out) {
+	out = or(and(a, not(b)), and(not(a), b));
+}
+
+// Full adder. Outputs value as V and carry as C.
+function add(a, b, c : v, c) {
+	v = xor(c, xor(a, b));
+	c = or(and(a, b), and(xor(a, b), c));
+}
+
+// Adds together four bits.
+function add4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
+	var c = 0;
+	o1, c = add(a1, b1, c);
+	o2, c = add(a2, b2, c);
+	o3, c = add(a3, b3, c);
+	o4, c = add(a4, b4, c);
+}
+
+// Returns the complement of the given value.
+function complement4(v1, v2, v3, v4 : o1, o2, o3, o4) {
+	increment4(not(v1), not(v2), not(v3), not(v4));
+}
+
+// Subtracts B from A.
+function sub4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
+	var c = 0;
+	o1, o2, o3, o4 = add4(a1, a2, a3, a4, complement4(b1, b2, b3, b4));
+}
+
+// Increments the given value by 1.
+function increment4(v1, v2, v3, v4 : o1, o2, o3, o4) {
+	o1, o2, o3, o4 = add4(v1, v2, v3, v4, 0, 0, 0, 1);
+}
+
+// Returns 1 if the two values A and B are equal.
+function eq4(a1, a2, a3, a4, b1, b2, b3, b4 : out) {
+	out = and(and(equal(a1, b1), equal(a2, b2)), and(equal(a3, b3), equal(a4, b4)))
+}
+
+// Returns 1 if A is greater than B.
+function ge4(a1, a2, a3, a4, b1, b2, b3, b4 : out) {
+	out = ge(ge(ge(a1, b1), ge(a2, b2)), ge(ge(a3, b3), ge(a4, b4)));
+}
+
+// Divides A by B and returns the quotient.
+function divide4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
+	o1 = 0;
+	o2 = 0;
+	o3 = 0;
+	o4 = 0;
+	while ge4(a1, a2, a3, a4, b1, b2, b3, b4) {
+		increment(o1, o2, o3, o4);
+		a1, a2, a3, a4 = sub4(a1, a2, a3, a4, b1, b2, b3, b4);
+	}
+}
+
+// Multiplies A and B and requrns the product.
+function multiply4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
+	// outputs must be initialized first.
+	o1 = 0;
+	o2 = 0;
+	o3 = 0;
+	o4 = 0;
+	while not(eq4(b1, b2, b3, b4, 0, 0, 0, 0)) {
+		// outputs can be re-assigned.
+		o1, o2, o3, o4 = add4(a1, a2, a3, a4, o1, o2, o3, o4);
+	}
+}
+
+// Returns the modulo of A and B.
+function mod4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
+	o1, o2, o3, o4 = sub4(a1, a2, a3, a4, multiply4(b1, b2, b3, b4, divide4(a1, a2, a3, a4, b1, b2, b3, b4)));
+}
+
+// Fizzbuzz
+function fizzbuzz(v1, v2, v3, v4) {
+	var fizz = eq4(mod4(v1, v2, v3, v4, 0, 0, 1, 1));
+	var buzz = eq4(mod4(v1, v2, v3, v4, 0, 1, 0, 1));
+	if fizz {
+		putc('F');
+		putc('i');
+		putc('z');
+		putc('z');
+	}
+	if buzz {
+		putc('B');
+		putc('u');
+		putc('z');
+		putc('z');
+	}
+	if fizz ! buzz {
+		putint(0, 0, 0, 0, v1, v2, v3, v4);
+	}
+	putc('\n');
+	if not(ge4(v1, v2, v3, v4, 1, 0, 0, 0)) {
+		// Can use recursion.
+		fizzbuzz(increment4(v1, v2, v3, v4));
+	}
+}
+
+// Entry point.
+function main() {
+	fizzbuzz(0, 0, 0, 1);
+}

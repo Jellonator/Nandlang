@@ -1,0 +1,7 @@
+function foo(a, b : c) {
+    c = a ! b;
+}
+
+function main() {
+	var x = foo(a, b);
+}

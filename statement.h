@@ -1,0 +1,63 @@
+#pragma once
+#include "expression.h"
+
+class State;
+
+/// A statement. Unlike an expression, a statement does not have any outputs.
+class Statement {
+public:
+    /// Resolve this statement. This is similar to calling a function.
+    virtual void resolve(State&) const = 0;
+    /// Check the statement to ensure consistency and integrity.
+    /// Throws an exception on failure.
+    virtual void check(State&) const = 0;
+};
+
+/// Unique pointer to a statement
+typedef std::unique_ptr<Statement> StatementPtr;
+
+void checkStatements(State& state, const std::vector<StatementPtr>& statements);
+
+/// An assignment statement. Assigns a value to a variable
+class StatementAssign : public Statement {
+    std::vector<std::string> m_variables;
+    std::vector<ExpressionPtr> m_expressions;
+public:
+    void resolve(State& state) const override;
+    void check(State&) const override;
+};
+
+/// An if statement. Checks a condition to execute a block of statements
+class StatementIf : public Statement {
+    ExpressionPtr m_condition;
+    std::vector<StatementPtr> m_block;
+public:
+    void resolve(State& state) const override;
+    void check(State&) const override;
+};
+
+/// A while statement. Executes a block of statements while a condition is true.
+class StatementWhile : public Statement {
+    ExpressionPtr m_condition;
+    std::vector<StatementPtr> m_block;
+public:
+    void resolve(State& state) const override;
+    void check(State&) const override;
+};
+
+/// A var statement. Declares a variable.
+class StatementVariable : public Statement {
+    std::vector<std::string> m_variables;
+    std::vector<ExpressionPtr> m_expressions;
+public:
+    void resolve(State& state) const override;
+    void check(State&) const override;
+};
+
+/// A statement that is simply an expression
+class StatementExpression : public Statement {
+    ExpressionPtr m_expression;
+public:
+    void resolve(State& state) const override;
+    void check(State&) const override;
+};
