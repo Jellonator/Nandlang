@@ -11,4 +11,11 @@ function main() {
     putb(t2);
     putb(t3);
     putb(t4);
+    endl();
+    var t1, t2, t3, t4 = foo(0, 1, 0, 1);
+    putb(t1);
+    putb(t2);
+    putb(t3);
+    putb(t4);
+    endl();
 }

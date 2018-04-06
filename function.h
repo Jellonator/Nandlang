@@ -3,13 +3,14 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "debug.h"
 #include "statement.h"
 
 class State;
 
 /// A function that can be called
 /// Has a set number of inputs and outputs
-class Function {
+class Function : public Debuggable {
 public:
     /// get number of inputs
     virtual uint64_t getInputNum() const = 0;

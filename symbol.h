@@ -5,11 +5,12 @@
 #include <set>
 #include <deque>
 #include <iostream>
+#include "debug.h"
 
 /// Represents a particular symbol type.
 enum class Symbol {
     LITERAL, COMMA, BLOCK, IOSEP, PARENTHESIS, IDENTIFIER,
-    ASSIGN, FUNCTION, WHILE, IF, VAR, LINESEP, NAND
+    ASSIGN, FUNCTION, WHILE, IF, VAR, LINESEP, NAND, NONE
 };
 
 /// Maps single character symbols to Symbol values
@@ -28,7 +29,7 @@ typedef std::deque<Token> TokenBlock;
 /// Represents a Token. A Token is a symbol that potentially has an associated
 /// value. For example, an IDENTIFIER symbol also has a string, and a LITERAL
 /// symbol has a boolean value.
-class Token {
+class Token : public Debuggable {
     Symbol m_symbol;
     std::string m_identifier; // for Identifier symbols
     bool m_value;             // for Literal symbols
@@ -47,14 +48,11 @@ public:
     /// Get this token's block
     const TokenBlock& getBlock() const;
     /// Get a mutable reference to the token block
-    TokenBlock& getBlockMut();
-
+    TokenBlock takeBlock();
     /// Set identifier
     void setIdentifier(std::string);
     /// Set literal value
     void setValue(bool);
-    /// Append to block
-    void appendToBlock(Token);
 };
 
 std::ostream& operator<<(std::ostream&, const Symbol&);

@@ -3,6 +3,24 @@
 #include <stdexcept>
 #include <sstream>
 
+/// Put bit function
+void fn_putb(State& state)
+{
+    bool b = state.pop();
+    std::cout << b;
+}
+
+void fn_endl(State& state)
+{
+    std::cout << std::endl;
+}
+
+State::State()
+{
+    m_functions["putb"] = std::make_unique<FunctionExternal>(fn_putb, 1, 0);
+    m_functions["endl"] = std::make_unique<FunctionExternal>(fn_endl, 0, 0);
+}
+
 Function& State::getFunction(const std::string& name)
 {
     if (m_functions.count(name)) {
@@ -16,13 +34,13 @@ Function& State::getFunction(const std::string& name)
 
 void State::push(bool value)
 {
-    m_stack.push(value);
+    m_stack.push_back(value);
 }
 
 bool State::pop()
 {
-    bool ret = m_stack.top();
-    m_stack.pop();
+    bool ret = m_stack.back();
+    m_stack.pop_back();
     return ret;
 }
 
@@ -53,5 +71,12 @@ void State::parse(TokenBlock&& tokens)
         std::tie(name, func) = parseFunction(taker);
         std::cout << name << std::endl;
         m_functions[name] = std::move(func);
+    }
+}
+
+void State::check()
+{
+    for (const auto& func : m_functions) {
+        func.second->check(*this);
     }
 }

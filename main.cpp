@@ -1,11 +1,9 @@
 #include "parse.h"
 #include "state.h"
+#include "debug.h"
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
-#include <stdio.h>
-#include <signal.h>
-#include <execinfo.h>
 
 /// Print out the given token block
 void printBlock(const TokenBlock& block)
@@ -29,6 +27,7 @@ void printBlock(const TokenBlock& block)
         case Symbol::WHILE:      std::cout << "while ";    break;
         case Symbol::IF:         std::cout << "if ";       break;
         case Symbol::VAR:        std::cout << "var ";      break;
+        case Symbol::NONE:       std::cout << "ERROR";     break;
         case Symbol::COMMA:      std::cout << ","; break;
         case Symbol::IOSEP:      std::cout << ":"; break;
         case Symbol::ASSIGN:     std::cout << "="; break;
@@ -46,15 +45,18 @@ int main(int argc, char **argv)
         if (!stream.is_open()) {
             std::cout << "Could not open file." << std::endl;
         } else {
+            DebugInfo info;
+            info.filename = std::make_shared<std::string>(argv[1]);
             try {
                 TokenBlock block = parseTokens(stream);
-                printBlock(block);
+                // printBlock(block);
                 State state;
                 state.parse(std::move(block));
+                state.check();
                 state.getFunction("main").call(state);
                 std::cout << "Execution successful!" << std::endl;
             } catch (std::exception& e) {
-                std::cout << "Error: " << e.what() << std::endl;
+                std::cout << e.what() << std::endl;
             }
         }
     }

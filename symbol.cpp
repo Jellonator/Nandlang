@@ -59,9 +59,11 @@ const TokenBlock& Token::getBlock() const
     return m_block;
 }
 
-TokenBlock& Token::getBlockMut()
+TokenBlock Token::takeBlock()
 {
-    return m_block;
+    TokenBlock replacement;
+    std::swap(m_block, replacement);
+    return replacement;
 }
 
 void Token::setIdentifier(std::string id)
@@ -72,11 +74,6 @@ void Token::setIdentifier(std::string id)
 void Token::setValue(bool value)
 {
     m_value = value;
-}
-
-void Token::appendToBlock(Token token)
-{
-    m_block.push_back(token);
 }
 
 std::ostream& operator<<(std::ostream& stream, const Symbol& symbol)
@@ -92,6 +89,7 @@ std::ostream& operator<<(std::ostream& stream, const Symbol& symbol)
         case Symbol::BLOCK:       stream << "block";           break;
         case Symbol::IOSEP:       stream << "colon";           break;
         case Symbol::COMMA:       stream << "comma";           break;
+        case Symbol::NONE:        stream << "ERROR";           break;
         case Symbol::WHILE:       stream << "while";           break;
         case Symbol::VAR:         stream << "var";             break;
         case Symbol::IF:          stream << "if";              break;

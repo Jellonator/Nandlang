@@ -1,10 +1,11 @@
 #pragma once
+#include "debug.h"
 #include "expression.h"
 
 class State;
 
 /// A statement. Unlike an expression, a statement does not have any outputs.
-class Statement {
+class Statement : public Debuggable {
 public:
     /// Resolve this statement. This is similar to calling a function.
     virtual void resolve(State&) const = 0;
@@ -23,24 +24,7 @@ class StatementAssign : public Statement {
     std::vector<std::string> m_variables;
     std::vector<ExpressionPtr> m_expressions;
 public:
-    void resolve(State& state) const override;
-    void check(State&) const override;
-};
-
-/// An if statement. Checks a condition to execute a block of statements
-class StatementIf : public Statement {
-    ExpressionPtr m_condition;
-    std::vector<StatementPtr> m_block;
-public:
-    void resolve(State& state) const override;
-    void check(State&) const override;
-};
-
-/// A while statement. Executes a block of statements while a condition is true.
-class StatementWhile : public Statement {
-    ExpressionPtr m_condition;
-    std::vector<StatementPtr> m_block;
-public:
+    StatementAssign(std::vector<std::string>&&, std::vector<ExpressionPtr>&&);
     void resolve(State& state) const override;
     void check(State&) const override;
 };
@@ -50,6 +34,27 @@ class StatementVariable : public Statement {
     std::vector<std::string> m_variables;
     std::vector<ExpressionPtr> m_expressions;
 public:
+    StatementVariable(std::vector<std::string>&&, std::vector<ExpressionPtr>&&);
+    void resolve(State& state) const override;
+    void check(State&) const override;
+};
+
+/// An if statement. Checks a condition to execute a block of statements
+class StatementIf : public Statement {
+    ExpressionPtr m_condition;
+    std::vector<StatementPtr> m_block;
+public:
+    StatementIf(ExpressionPtr, std::vector<StatementPtr>&&);
+    void resolve(State& state) const override;
+    void check(State&) const override;
+};
+
+/// A while statement. Executes a block of statements while a condition is true.
+class StatementWhile : public Statement {
+    ExpressionPtr m_condition;
+    std::vector<StatementPtr> m_block;
+public:
+    StatementWhile(ExpressionPtr, std::vector<StatementPtr>&&);
     void resolve(State& state) const override;
     void check(State&) const override;
 };
@@ -58,6 +63,7 @@ public:
 class StatementExpression : public Statement {
     ExpressionPtr m_expression;
 public:
+    StatementExpression(ExpressionPtr&& expr);
     void resolve(State& state) const override;
     void check(State&) const override;
 };
