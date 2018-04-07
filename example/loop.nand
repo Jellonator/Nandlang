@@ -1,0 +1,5 @@
+function main() {
+    while iogood() {
+        putc(getc());
+    }
+}

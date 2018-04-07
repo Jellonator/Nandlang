@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 
+/// Replace every tab character with the given number of spaces
 std::string replaceTabs(const std::string& str, size_t spaces)
 {
     std::string ret;
@@ -20,13 +21,68 @@ std::string replaceTabs(const std::string& str, size_t spaces)
     return ret;
 }
 
+void handleError(const DebugError& e)
+{
+    // Output error message
+    std::cout << e.what() << std::endl;
+    // Re-open file
+    std::ifstream stream(*e.getDebugInfo().filename);
+    // Seek to the given position, then go one past the last newline
+    // character, so that the entire line can be loaded.
+    stream.seekg(e.getDebugInfo().position, std::ios_base::beg);
+    while (stream.tellg() > 0 && stream.peek() != '\n') {
+        stream.unget();
+    }
+    stream.get();
+    // read the line in question
+    std::string line;
+    std::getline(stream, line);
+    // the error line is every character up to and including the
+    // point of error
+    std::string errline = line.substr(0, e.getDebugInfo().column-1);
+    // format line so that tabs are predictable
+    line = replaceTabs(line, 4);
+    errline = replaceTabs(errline, 4);
+    // Every character in the error line is now a -
+    for (char& c : errline) {
+        c = '-';
+    }
+    // The error line points to the error
+    errline.back() = '^';
+    // output error line
+    std::cout << line << std::endl;
+    std::cout << errline << std::endl;
+}
+
+void run(std::istream& stream, const DebugInfo& info)
+{
+    // create debugging information
+    try {
+        // parse characters into tokens
+        TokenBlock block = parseTokens(stream, info);
+        // create execution state
+        State state;
+        // load functions from token block
+        state.parse(std::move(block));
+        // check for integrity issues
+        state.check();
+        // call main function
+        state.getFunction("main").call(state);
+    } catch (DebugError& e) {
+        handleError(e);
+    } catch (std::exception& e) {
+        // generic, unknown error
+        std::cout << "Generic Error: " << e.what() << std::endl;
+    }
+}
+
 int main(int argc, char **argv)
 {
-    if (argc == 1) {
+    if (argc != 2) {
         std::cout << "Expected 1 argument." << std::endl;
-    } else if (argc == 2) {
-        std::ifstream stream(argv[1]);
-        if (!stream.is_open()) {
+    } else {
+        std::ifstream file(argv[1]);
+        if (!file.is_open()) {
             std::cout << "Could not open file." << std::endl;
         } else {
             DebugInfo info;
@@ -34,35 +90,7 @@ int main(int argc, char **argv)
             info.line = 1;
             info.column = 1;
             info.position = 0;
-            try {
-                TokenBlock block = parseTokens(stream, info);
-                // printBlock(block);
-                State state;
-                state.parse(std::move(block));
-                state.check();
-                state.getFunction("main").call(state);
-                std::cout << "Execution successful!" << std::endl;
-            } catch (DebugError& e) {
-                std::cout << e.what() << std::endl;
-                stream.seekg(e.getDebugInfo().position-1, std::ios_base::beg);
-                while (stream.tellg() > 0 && stream.peek() != '\n') {
-                    stream.unget();
-                }
-                stream.get();
-                std::string line;
-                std::getline(stream, line);
-                std::string errline = line.substr(0, e.getDebugInfo().column-1);
-                line = replaceTabs(line, 4);
-                errline = replaceTabs(errline, 4);
-                for (char& c : errline) {
-                    c = '-';
-                }
-                errline.back() = '^';
-                std::cout << line << std::endl;
-                std::cout << errline << std::endl;
-            } catch (std::exception& e) {
-                std::cout << "Generic Error: " << e.what() << std::endl;
-            }
+            run(file, info);
         }
     }
     return 0;

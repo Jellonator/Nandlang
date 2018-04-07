@@ -7,9 +7,11 @@ DebugInfo::DebugInfo()
 
 std::ostream& operator<<(std::ostream& stream, const DebugInfo& info)
 {
+    // output filename only if file is known
     if (info.filename) {
         stream << " in file " << *info.filename;
     }
+    // output line if it is non-zero (known lines are not zero)
     if (info.line) {
         stream << " on line " << info.line << ":" << info.column;
     }

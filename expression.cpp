@@ -5,7 +5,8 @@
 
 const std::string ignoreIdentifier = "_";
 
-size_t countOutputs(State& state, const std::vector<ExpressionPtr>& expressions)
+size_t countOutputs(State& state,
+    const std::vector<ExpressionPtr>& expressions)
 {
     size_t ret = 0;
     for (const auto& expr : expressions) {
@@ -14,7 +15,8 @@ size_t countOutputs(State& state, const std::vector<ExpressionPtr>& expressions)
     return ret;
 }
 
-void checkExpressions(State& state, const std::vector<ExpressionPtr>& expressions)
+void checkExpressions(State& state,
+    const std::vector<ExpressionPtr>& expressions)
 {
     for (const auto& expr : expressions) {
         expr->check(state);
@@ -33,6 +35,7 @@ void ExpressionNand::resolve(State& state) const
     m_right->resolve(state);
     bool left = state.pop();
     bool right = state.pop();
+    // nand, aka not and
     state.push(!(left && right));
 }
 

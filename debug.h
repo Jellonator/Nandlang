@@ -7,9 +7,14 @@
 class DebugInfo {
 public:
     DebugInfo();
+    // line in file
     size_t line;
+    /// column in file
     size_t column;
+    /// byte position in file
     size_t position;
+    /// name of the file. This is a shared pointer so that memory/processing
+    /// isn't wasted too much by copying strings around.
     std::shared_ptr<std::string> filename;
 };
 std::ostream& operator<<(std::ostream&, const DebugInfo&);
@@ -40,6 +45,7 @@ class DebugError : public Debuggable {
     std::string m_err;
 public:
     DebugError(const DebugInfo&, const std::string&);
+    /// Error message
     const std::string& what() const;
 };
 
@@ -49,5 +55,6 @@ class InfolessError {
     std::string m_err;
 public:
     InfolessError(const std::string&);
+    /// Error message
     const std::string& what() const;
 };

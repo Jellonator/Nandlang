@@ -14,8 +14,12 @@ class State;
 class Expression : public Debuggable {
 public:
     Expression(const DebugInfo& info);
+    /// Call this expression. Will take getInputNum() values from the stack,
+    /// then push getOutputNum() values onto the stack.
     virtual void resolve(State&) const = 0;
+    /// Get the number of inputs.
     virtual uint64_t getInputNum(State&) const = 0;
+    /// Get the number of outputs.
     virtual uint64_t getOutputNum(State&) const = 0;
     /// Check the expression to ensure consistency and integrity.
     /// Throws an exception on failure.
@@ -24,8 +28,14 @@ public:
 
 typedef std::unique_ptr<Expression> ExpressionPtr;
 
-size_t countOutputs(State& state, const std::vector<ExpressionPtr>& expressions);
-void checkExpressions(State& state, const std::vector<ExpressionPtr>& expressions);
+/// Count the number of outputs that the given list of expressions has.
+/// This is because an expression can have a variable number of outputs.
+size_t countOutputs(State& state,
+    const std::vector<ExpressionPtr>& expressions);
+
+/// Apply the check function for all of the given expressions
+void checkExpressions(State& state,
+    const std::vector<ExpressionPtr>& expressions);
 
 /// A NAND expression. NANDS two values together
 class ExpressionNand : public Expression {

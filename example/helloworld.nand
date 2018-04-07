@@ -13,5 +13,5 @@ function main()
     putc('l');
     putc('d');
     putc('!');
-    putc(11); putc('d');
+    endl();
 }

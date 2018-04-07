@@ -85,12 +85,16 @@ StatementIf::StatementIf(const DebugInfo& info, ExpressionPtr cond,
 
 void StatementIf::resolve(State& state) const
 {
+    // check condition
     m_condition->resolve(state);
     if (state.pop()) {
+        // push an empty block
         state.pushBlock({}, {});
+        // call statements
         for (const auto& stmt : m_block) {
             stmt->resolve(state);
         }
+        // pop block
         state.popBlock();
     }
 }
@@ -114,9 +118,11 @@ StatementWhile::StatementWhile(const DebugInfo& info, ExpressionPtr cond,
 
 void StatementWhile::resolve(State& state) const
 {
+    // same as for if, but in a loop
     for (;;) {
         m_condition->resolve(state);
         if (!state.pop()) {
+            // only difference is how the exit condition is handled
             return;
         }
         state.pushBlock({}, {});

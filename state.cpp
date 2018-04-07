@@ -40,12 +40,41 @@ void fn_putc(State& state) {
     std::cout << value;
 }
 
+/// Get character function
+void fn_getc(State& state) {
+    char c;
+    std::cin.get(c);
+    for (size_t i = 0; i < 8; ++i) {
+        // Most significant bit comes first, since this language behaves in
+        // a big-endian way.
+        bool b = c & 0x80;
+        c <<= 1;
+        state.push(b);
+    }
+}
+
+/// Gets whether or not std::cin is able to be read
+void fn_iogood(State& state) {
+    state.push(bool(std::cin));
+}
+
+const std::map<std::string, FunctionExternal> stdlib = {
+    {"putb",   {fn_putb,   1, 0}},
+    {"puti8",  {fn_puti8,  8, 0}},
+    {"putc",   {fn_putc,   8, 0}},
+    {"getc",   {fn_getc,   0, 8}},
+    {"endl",   {fn_endl,   0, 0}},
+    {"iogood", {fn_iogood, 0, 1}}
+};
+
 State::State()
 {
-    m_functions["putb"] = std::make_unique<FunctionExternal>(fn_putb, 1, 0);
-    m_functions["puti8"] = std::make_unique<FunctionExternal>(fn_puti8, 8, 0);
-    m_functions["putc"] = std::make_unique<FunctionExternal>(fn_putc, 8, 0);
-    m_functions["endl"] = std::make_unique<FunctionExternal>(fn_endl, 0, 0);
+    // load functions
+    for (const auto& p : stdlib) {
+        // FunctionExternal is copy-able, since std::function is copyable and
+        // Debuggable is copyable.
+        m_functions[p.first] = std::make_unique<FunctionExternal>(p.second);
+    }
 }
 
 Function& State::getFunction(const std::string& name)
@@ -74,6 +103,8 @@ bool State::pop()
 void State::pushBlock(const std::vector<std::string>& input_names,
                       const std::vector<std::string>& output_names)
 {
+    // the new block will take the place of the old block. Behaves similarly to
+    // a stack.
     auto new_block = std::make_unique<Block>(
         input_names, output_names, std::move(m_block), *this);
     m_block = std::move(new_block);

@@ -59,6 +59,7 @@ void FunctionInternal::call(State& state) const
 
 void FunctionInternal::check(State& state) const
 {
+    // make sure that no two parameters have the same name.
     std::set<std::string> namecheck;
     for (const auto& name : m_inputNames) {
         if (namecheck.count(name)) {

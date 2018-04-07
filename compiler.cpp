@@ -127,6 +127,7 @@ std::pair<TokenTaker, TokenTaker> splitAt(
         Token t = tokens.pop();
         if (t.getSymbol() == at) {
             if (info) {
+                // assign debug info for center token
                 *info = t.getDebugInfo();
             }
             break;
@@ -134,6 +135,7 @@ std::pair<TokenTaker, TokenTaker> splitAt(
             left.push(std::move(t));
         }
     }
+    // everything after is now on the right, even if it is the split symbol.
     while (tokens) {
         Token t = tokens.pop();
         right.push(std::move(t));
@@ -147,14 +149,17 @@ std::pair<TokenTaker, TokenTaker> splitAt(
 void splitMultiple(TokenTaker& tokens, Symbol at, bool require_end,
     std::function<void(TokenTaker)> func)
 {
-    std::vector<TokenTaker> ret{};
     TokenTaker taker;
     while (tokens) {
         Token t = tokens.pop();
         if (t.getSymbol() != at) {
+            // add all other symbols to the TokenTaker
             taker.push(std::move(t));
         }
         if (t.getSymbol() == at || (!tokens && taker)) {
+            // call the function if the split symbol is found, or if we have
+            // ran out of tokens and there are still symbols that need to be
+            // parsed.
             try {
                 func(taker);
             } catch (InfolessError& e) {
@@ -163,6 +168,8 @@ void splitMultiple(TokenTaker& tokens, Symbol at, bool require_end,
             taker.clear();
         }
         if (t.getSymbol() != at && require_end && !tokens) {
+            // There is an error if the split symbol is expected at the end,
+            // but the last symbol is not the split symbol.
             std::stringstream s;
             s << "Expected " << at;
             t.throwError(s.str());
@@ -170,8 +177,6 @@ void splitMultiple(TokenTaker& tokens, Symbol at, bool require_end,
     }
 }
 
-/// Parses a single function from the given tokens. Returns a pair containint
-/// the function's name and the function itself.
 std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
 {
     // get tokens
@@ -224,8 +229,6 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
         std::move(outputs), std::move(block)));
 }
 
-/// Unlike parseStatement, this function does not exhaust the given TokenTaker
-/// Make sure to use the assertEmpty function afterwards if need be.
 ExpressionPtr parseExpression(TokenTaker& tokens)
 {
     auto first = tokens.peek();
@@ -264,6 +267,7 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
                 t.getDebugInfo(), t.getIdentifier());
         }
     } else if (first == Symbol::LITERAL) {
+        // literal value
         Token t = tokens.pop();
         left = std::make_unique<ExpressionLiteral>(
             t.getDebugInfo(), t.getValue());
@@ -291,20 +295,6 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
     }
 }
 
-/// Parse the given TokenTaker as a block of statements. Will exhaust the given
-/// TokenTaker.
-std::vector<StatementPtr> parseBlock(TokenTaker& tokens)
-{
-    std::vector<StatementPtr> block;
-    splitMultiple(tokens, Symbol::LINESEP, true, [&block](auto tokens) {
-        assertNotEmpty(tokens, "statement before semicolon");
-        block.push_back(parseStatement(tokens));
-    });
-    return block;
-}
-
-/// Parses a statement. Will exhaust the given TokenTaker.
-/// Make sure that TokenTaker is not exhausted before calling this function.
 StatementPtr parseStatement(TokenTaker& tokens)
 {
     auto first = tokens.peek();
@@ -371,8 +361,19 @@ StatementPtr parseStatement(TokenTaker& tokens)
                 info, std::move(names), std::move(values));
         }
     } else {
+        // this is probably an expression. An error will result if it is not.
         auto expr = parseExpression(tokens);
         assertEmpty(tokens);
         return std::make_unique<StatementExpression>(std::move(expr));
     }
+}
+
+std::vector<StatementPtr> parseBlock(TokenTaker& tokens)
+{
+    std::vector<StatementPtr> block;
+    splitMultiple(tokens, Symbol::LINESEP, true, [&block](auto tokens) {
+        assertNotEmpty(tokens, "statement before semicolon");
+        block.push_back(parseStatement(tokens));
+    });
+    return block;
 }
