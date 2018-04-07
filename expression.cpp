@@ -16,10 +16,11 @@ size_t countOutputs(State& state,
 }
 
 void checkExpressions(State& state,
-    const std::vector<ExpressionPtr>& expressions)
+    const std::vector<ExpressionPtr>& expressions,
+    std::set<std::string>& names)
 {
     for (const auto& expr : expressions) {
-        expr->check(state);
+        expr->check(state, names);
     }
 }
 
@@ -49,7 +50,7 @@ uint64_t ExpressionNand::getOutputNum(State& state) const
     return 1;
 }
 
-void ExpressionNand::check(State& state) const
+void ExpressionNand::check(State& state, std::set<std::string>& names) const
 {
     if (m_left->getOutputNum(state) != 1) {
         std::stringstream s;
@@ -61,8 +62,8 @@ void ExpressionNand::check(State& state) const
         s << "Right operand to NAND operator should have 1 output.";
         throwError(s.str());
     }
-    m_left->check(state);
-    m_right->check(state);
+    m_left->check(state, names);
+    m_right->check(state, names);
 }
 
 ExpressionFunction::ExpressionFunction(
@@ -92,7 +93,7 @@ uint64_t ExpressionFunction::getOutputNum(State& state) const
     return func.getOutputNum();
 }
 
-void ExpressionFunction::check(State& state) const
+void ExpressionFunction::check(State& state, std::set<std::string>& names) const
 {
     Function& func = state.getFunction(m_functionName);
     if (func.getInputNum() != countOutputs(state, m_arguments)) {
@@ -100,7 +101,7 @@ void ExpressionFunction::check(State& state) const
         s << "Function expected different number of inputs.";
         throwError(s.str());
     }
-    checkExpressions(state, m_arguments);
+    checkExpressions(state, m_arguments, names);
     // Do NOT check func here because functions are already checked by State
 }
 
@@ -108,9 +109,13 @@ ExpressionVariable::ExpressionVariable(
     const DebugInfo& info, const std::string& name)
 : Expression(info), m_name(name) {}
 
-void ExpressionVariable::check(State& state) const
+void ExpressionVariable::check(State& state, std::set<std::string>& names) const
 {
-    // nothing to do
+    if (names.count(m_name) == 0) {
+        std::stringstream s;
+        s << "Use of undefined variable " << m_name;
+        throwError(s.str());
+    }
 }
 
 void ExpressionVariable::resolve(State& state) const
@@ -147,7 +152,7 @@ uint64_t ExpressionLiteral::getOutputNum(State& state) const
     return 1;
 }
 
-void ExpressionLiteral::check(State& state) const
+void ExpressionLiteral::check(State& state, std::set<std::string>& names) const
 {
     // nothing to do
 }

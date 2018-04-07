@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include "debug.h"
 #include "expression.h"
 
@@ -11,14 +12,19 @@ public:
     /// Resolve this statement. This is similar to calling a function.
     virtual void resolve(State&) const = 0;
     /// Check the statement to ensure consistency and integrity.
-    /// Throws an exception on failure.
-    virtual void check(State&) const = 0;
+    /// Throws an exception on failure. The first argument is the execution
+    /// state, and the second argument is a set of variable names.
+    virtual void check(State&, std::set<std::string>&) const = 0;
 };
 
 /// Unique pointer to a statement
 typedef std::unique_ptr<Statement> StatementPtr;
 
-void checkStatements(State& state, const std::vector<StatementPtr>& statements);
+/// Check the given statements to integrity errors. Since checkStatement is used
+/// for blocks and blocks may declare their own variables, the given namecheck
+/// will not be modified.
+void checkStatements(State& state, const std::vector<StatementPtr>& statements,
+    const std::set<std::string>& namecheck);
 
 /// An assignment statement. Assigns a value to a variable
 class StatementAssign : public Statement {
@@ -28,7 +34,7 @@ public:
     StatementAssign(const DebugInfo&, std::vector<std::string>&&,
         std::vector<ExpressionPtr>&&);
     void resolve(State& state) const override;
-    void check(State&) const override;
+    void check(State&, std::set<std::string>&) const override;
 };
 
 /// A var statement. Declares a variable.
@@ -39,7 +45,7 @@ public:
     StatementVariable(const DebugInfo&, std::vector<std::string>&&,
         std::vector<ExpressionPtr>&&);
     void resolve(State& state) const override;
-    void check(State&) const override;
+    void check(State&, std::set<std::string>&) const override;
 };
 
 /// An if statement. Checks a condition to execute a block of statements
@@ -49,7 +55,7 @@ class StatementIf : public Statement {
 public:
     StatementIf(const DebugInfo&, ExpressionPtr, std::vector<StatementPtr>&&);
     void resolve(State& state) const override;
-    void check(State&) const override;
+    void check(State&, std::set<std::string>&) const override;
 };
 
 /// A while statement. Executes a block of statements while a condition is true.
@@ -60,7 +66,7 @@ public:
     StatementWhile(const DebugInfo&, ExpressionPtr,
         std::vector<StatementPtr>&&);
     void resolve(State& state) const override;
-    void check(State&) const override;
+    void check(State&, std::set<std::string>&) const override;
 };
 
 /// A statement that is simply an expression
@@ -69,5 +75,5 @@ class StatementExpression : public Statement {
 public:
     StatementExpression(ExpressionPtr&& expr);
     void resolve(State& state) const override;
-    void check(State&) const override;
+    void check(State&, std::set<std::string>&) const override;
 };

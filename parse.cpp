@@ -194,7 +194,7 @@ TokenBlock _parseTokens(std::istream& stream, DebugInfo& context, char endc)
         } else {
             if (isCharacterAllowed(c)) {
                 if (identifier.empty()) {
-                    id_info = context;
+                    id_info = info;
                 }
                 identifier += c;
             } else {

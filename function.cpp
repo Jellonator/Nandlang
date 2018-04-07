@@ -64,7 +64,7 @@ void FunctionInternal::check(State& state) const
     for (const auto& name : m_inputNames) {
         if (namecheck.count(name)) {
             std::stringstream s;
-            s << "Duplicate parameter of name " << name;
+            s << "Duplicate input of name " << name;
             throwError(s.str());
         }
         namecheck.insert(name);
@@ -77,5 +77,5 @@ void FunctionInternal::check(State& state) const
         }
         namecheck.insert(name);
     }
-    checkStatements(state, m_block);
+    checkStatements(state, m_block, namecheck);
 }

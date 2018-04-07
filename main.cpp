@@ -39,7 +39,7 @@ void handleError(const DebugError& e)
     std::getline(stream, line);
     // the error line is every character up to and including the
     // point of error
-    std::string errline = line.substr(0, e.getDebugInfo().column-1);
+    std::string errline = line.substr(0, e.getDebugInfo().column);
     // format line so that tabs are predictable
     line = replaceTabs(line, 4);
     errline = replaceTabs(errline, 4);

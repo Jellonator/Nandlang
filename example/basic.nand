@@ -1,4 +1,11 @@
+function foo() {}
+
 function main() {
     var x = 1;
-    x = 0;
+    if x {
+        var y = 0;
+    }
+    if x {
+        var x = 0;
+    }
 }
