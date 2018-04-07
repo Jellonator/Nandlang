@@ -22,19 +22,23 @@ const std::map<Symbol, char> symbolBlocks = {
     {Symbol::PARENTHESIS, ')'}
 };
 
-Token::Token(Symbol symbol) : m_symbol(symbol) {}
+Token::Token(Symbol symbol, const DebugInfo& info)
+: Debuggable(info), m_symbol(symbol) {}
 
-Token::Token(Symbol symbol, bool value) : Token(symbol)
+Token::Token(Symbol symbol, bool value, const DebugInfo& info)
+: Token(symbol, info)
 {
     setValue(value);
 }
 
-Token::Token(Symbol symbol, std::string id) : Token(symbol)
+Token::Token(Symbol symbol, std::string id, const DebugInfo& info)
+: Token(symbol, info)
 {
     setIdentifier(id);
 }
 
-Token::Token(Symbol symbol, TokenBlock block) : Token(symbol)
+Token::Token(Symbol symbol, TokenBlock block, const DebugInfo& info)
+: Token(symbol, info)
 {
     m_block = block;
 }
@@ -111,4 +115,34 @@ std::ostream& operator<<(std::ostream& stream, const Token& token)
             break;
     }
     return stream;
+}
+
+void printBlock(const TokenBlock& block)
+{
+    for (const auto& t : block) {
+        switch (t.getSymbol()) {
+        case Symbol::BLOCK:
+            std::cout << "{" << std::endl;
+            printBlock(t.getBlock());
+            std::cout << "}" << std::endl;
+            break;
+        case Symbol::PARENTHESIS:
+            std::cout << "(";
+            printBlock(t.getBlock());
+            std::cout << ")";
+            break;
+        case Symbol::IDENTIFIER: std::cout << t.getIdentifier() << " "; break;
+        case Symbol::LINESEP:    std::cout << ";" << std::endl; break;
+        case Symbol::LITERAL:    std::cout << t.getValue();     break;
+        case Symbol::FUNCTION:   std::cout << "function "; break;
+        case Symbol::WHILE:      std::cout << "while ";    break;
+        case Symbol::IF:         std::cout << "if ";       break;
+        case Symbol::VAR:        std::cout << "var ";      break;
+        case Symbol::NONE:       std::cout << "ERROR";     break;
+        case Symbol::COMMA:      std::cout << ","; break;
+        case Symbol::IOSEP:      std::cout << ":"; break;
+        case Symbol::ASSIGN:     std::cout << "="; break;
+        case Symbol::NAND:       std::cout << "!"; break;
+        }
+    }
 }

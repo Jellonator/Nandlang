@@ -13,6 +13,7 @@ class State;
 /// An expression. An expression has inputs and outputs.
 class Expression : public Debuggable {
 public:
+    Expression(const DebugInfo& info);
     virtual void resolve(State&) const = 0;
     virtual uint64_t getInputNum(State&) const = 0;
     virtual uint64_t getOutputNum(State&) const = 0;
@@ -31,7 +32,7 @@ class ExpressionNand : public Expression {
     ExpressionPtr m_left;
     ExpressionPtr m_right;
 public:
-    ExpressionNand(ExpressionPtr&&, ExpressionPtr&&);
+    ExpressionNand(const DebugInfo&, ExpressionPtr&&, ExpressionPtr&&);
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
@@ -43,7 +44,8 @@ class ExpressionFunction : public Expression {
     std::string m_functionName;
     std::vector<ExpressionPtr> m_arguments;
 public:
-    ExpressionFunction(const std::string&, std::vector<ExpressionPtr>&&);
+    ExpressionFunction(const DebugInfo&, const std::string&,
+        std::vector<ExpressionPtr>&&);
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
@@ -54,7 +56,7 @@ public:
 class ExpressionVariable : public Expression {
     std::string m_name;
 public:
-    ExpressionVariable(const std::string&);
+    ExpressionVariable(const DebugInfo&, const std::string&);
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
@@ -65,7 +67,7 @@ public:
 class ExpressionLiteral : public Expression {
     bool m_value;
 public:
-    ExpressionLiteral(bool);
+    ExpressionLiteral(const DebugInfo&, bool);
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;

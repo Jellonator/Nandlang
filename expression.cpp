@@ -21,8 +21,11 @@ void checkExpressions(State& state, const std::vector<ExpressionPtr>& expression
     }
 }
 
-ExpressionNand::ExpressionNand(ExpressionPtr&& left, ExpressionPtr&& right)
-: m_left(std::move(left)), m_right(std::move(right)) {}
+Expression::Expression(const DebugInfo& info) : Debuggable(info) {}
+
+ExpressionNand::ExpressionNand(
+    const DebugInfo& info, ExpressionPtr&& left, ExpressionPtr&& right)
+: Expression(info), m_left(std::move(left)), m_right(std::move(right)) {}
 
 void ExpressionNand::resolve(State& state) const
 {
@@ -48,20 +51,21 @@ void ExpressionNand::check(State& state) const
     if (m_left->getOutputNum(state) != 1) {
         std::stringstream s;
         s << "Left operand to NAND operator should have 1 output.";
-        throw std::runtime_error(s.str());
+        throwError(s.str());
     }
     if (m_right->getOutputNum(state) != 1) {
         std::stringstream s;
         s << "Right operand to NAND operator should have 1 output.";
-        throw std::runtime_error(s.str());
+        throwError(s.str());
     }
     m_left->check(state);
     m_right->check(state);
 }
 
-ExpressionFunction::ExpressionFunction(const std::string& name,
+ExpressionFunction::ExpressionFunction(
+    const DebugInfo& info, const std::string& name,
     std::vector<ExpressionPtr>&& args)
-: m_functionName(name), m_arguments(std::move(args)) {}
+: Expression(info), m_functionName(name), m_arguments(std::move(args)) {}
 
 void ExpressionFunction::resolve(State& state) const
 {
@@ -91,14 +95,15 @@ void ExpressionFunction::check(State& state) const
     if (func.getInputNum() != countOutputs(state, m_arguments)) {
         std::stringstream s;
         s << "Function expected different number of inputs.";
-        throw std::runtime_error(s.str());
+        throwError(s.str());
     }
     checkExpressions(state, m_arguments);
-    func.check(state);
+    // Do NOT check func here because functions are already checked by State
 }
 
-ExpressionVariable::ExpressionVariable(const std::string& name)
-: m_name(name) {}
+ExpressionVariable::ExpressionVariable(
+    const DebugInfo& info, const std::string& name)
+: Expression(info), m_name(name) {}
 
 void ExpressionVariable::check(State& state) const
 {
@@ -107,7 +112,8 @@ void ExpressionVariable::check(State& state) const
 
 void ExpressionVariable::resolve(State& state) const
 {
-    state.push(state.getBlock().load(m_name));
+    bool value = state.getBlock().load(m_name);
+    state.push(value);
 }
 
 uint64_t ExpressionVariable::getInputNum(State& state) const
@@ -120,8 +126,8 @@ uint64_t ExpressionVariable::getOutputNum(State& state) const
     return 1;
 }
 
-ExpressionLiteral::ExpressionLiteral(bool value)
-: m_value(value) {}
+ExpressionLiteral::ExpressionLiteral(const DebugInfo& info, bool value)
+: Expression(info), m_value(value) {}
 
 void ExpressionLiteral::resolve(State& state) const
 {

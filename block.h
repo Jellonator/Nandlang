@@ -19,7 +19,7 @@ class Block {
 public:
     Block(const std::vector<std::string>& input_names,
           const std::vector<std::string>& output_names,
-          std::unique_ptr<Block> block, State& state);
+          std::unique_ptr<Block>&& block, State& state);
     void create(const std::string& name, bool value);
     void store(const std::string& name, bool value);
     bool load(const std::string& name) const;

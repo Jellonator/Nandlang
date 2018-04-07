@@ -7,6 +7,7 @@ class State;
 /// A statement. Unlike an expression, a statement does not have any outputs.
 class Statement : public Debuggable {
 public:
+    Statement(const DebugInfo& info);
     /// Resolve this statement. This is similar to calling a function.
     virtual void resolve(State&) const = 0;
     /// Check the statement to ensure consistency and integrity.
@@ -24,7 +25,8 @@ class StatementAssign : public Statement {
     std::vector<std::string> m_variables;
     std::vector<ExpressionPtr> m_expressions;
 public:
-    StatementAssign(std::vector<std::string>&&, std::vector<ExpressionPtr>&&);
+    StatementAssign(const DebugInfo&, std::vector<std::string>&&,
+        std::vector<ExpressionPtr>&&);
     void resolve(State& state) const override;
     void check(State&) const override;
 };
@@ -34,7 +36,8 @@ class StatementVariable : public Statement {
     std::vector<std::string> m_variables;
     std::vector<ExpressionPtr> m_expressions;
 public:
-    StatementVariable(std::vector<std::string>&&, std::vector<ExpressionPtr>&&);
+    StatementVariable(const DebugInfo&, std::vector<std::string>&&,
+        std::vector<ExpressionPtr>&&);
     void resolve(State& state) const override;
     void check(State&) const override;
 };
@@ -44,7 +47,7 @@ class StatementIf : public Statement {
     ExpressionPtr m_condition;
     std::vector<StatementPtr> m_block;
 public:
-    StatementIf(ExpressionPtr, std::vector<StatementPtr>&&);
+    StatementIf(const DebugInfo&, ExpressionPtr, std::vector<StatementPtr>&&);
     void resolve(State& state) const override;
     void check(State&) const override;
 };
@@ -54,7 +57,8 @@ class StatementWhile : public Statement {
     ExpressionPtr m_condition;
     std::vector<StatementPtr> m_block;
 public:
-    StatementWhile(ExpressionPtr, std::vector<StatementPtr>&&);
+    StatementWhile(const DebugInfo&, ExpressionPtr,
+        std::vector<StatementPtr>&&);
     void resolve(State& state) const override;
     void check(State&) const override;
 };

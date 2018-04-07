@@ -5,35 +5,19 @@
 #include <fstream>
 #include <stdexcept>
 
-/// Print out the given token block
-void printBlock(const TokenBlock& block)
+std::string replaceTabs(const std::string& str, size_t spaces)
 {
-    for (const auto& t : block) {
-        switch (t.getSymbol()) {
-        case Symbol::BLOCK:
-            std::cout << "{" << std::endl;
-            printBlock(t.getBlock());
-            std::cout << "}" << std::endl;
-            break;
-        case Symbol::PARENTHESIS:
-            std::cout << "(";
-            printBlock(t.getBlock());
-            std::cout << ")";
-            break;
-        case Symbol::IDENTIFIER: std::cout << t.getIdentifier() << " "; break;
-        case Symbol::LINESEP:    std::cout << ";" << std::endl; break;
-        case Symbol::LITERAL:    std::cout << t.getValue();     break;
-        case Symbol::FUNCTION:   std::cout << "function "; break;
-        case Symbol::WHILE:      std::cout << "while ";    break;
-        case Symbol::IF:         std::cout << "if ";       break;
-        case Symbol::VAR:        std::cout << "var ";      break;
-        case Symbol::NONE:       std::cout << "ERROR";     break;
-        case Symbol::COMMA:      std::cout << ","; break;
-        case Symbol::IOSEP:      std::cout << ":"; break;
-        case Symbol::ASSIGN:     std::cout << "="; break;
-        case Symbol::NAND:       std::cout << "!"; break;
+    std::string ret;
+    for (char c : str) {
+        if (c == '\t') {
+            for (size_t i = 0; i < spaces; ++i) {
+                ret += ' ';
+            }
+        } else {
+            ret += c;
         }
     }
+    return ret;
 }
 
 int main(int argc, char **argv)
@@ -47,16 +31,37 @@ int main(int argc, char **argv)
         } else {
             DebugInfo info;
             info.filename = std::make_shared<std::string>(argv[1]);
+            info.line = 1;
+            info.column = 1;
+            info.position = 0;
             try {
-                TokenBlock block = parseTokens(stream);
+                TokenBlock block = parseTokens(stream, info);
                 // printBlock(block);
                 State state;
                 state.parse(std::move(block));
                 state.check();
                 state.getFunction("main").call(state);
                 std::cout << "Execution successful!" << std::endl;
-            } catch (std::exception& e) {
+            } catch (DebugError& e) {
                 std::cout << e.what() << std::endl;
+                stream.seekg(e.getDebugInfo().position-1, std::ios_base::beg);
+                while (stream.tellg() > 0 && stream.peek() != '\n') {
+                    stream.unget();
+                }
+                stream.get();
+                std::string line;
+                std::getline(stream, line);
+                std::string errline = line.substr(0, e.getDebugInfo().column-1);
+                line = replaceTabs(line, 4);
+                errline = replaceTabs(errline, 4);
+                for (char& c : errline) {
+                    c = '-';
+                }
+                errline.back() = '^';
+                std::cout << line << std::endl;
+                std::cout << errline << std::endl;
+            } catch (std::exception& e) {
+                std::cout << "Generic Error: " << e.what() << std::endl;
             }
         }
     }

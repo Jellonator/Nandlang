@@ -36,4 +36,6 @@ public:
     /// will throw an exception if one of the following rules are broken:
     /// * inputs and outputs are mismatched in number
     void check();
+    /// Get number of values on stack
+    size_t size();
 };

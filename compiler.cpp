@@ -2,6 +2,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <functional>
 
 void foobar(State&) {}
 
@@ -15,11 +16,20 @@ void TokenTaker::push(Token&& token)
     m_tokens.push_back(std::move(token));
 }
 
+void TokenTaker::clear()
+{
+    m_tokens.clear();
+}
+
 Token TokenTaker::pop()
 {
-    Token ret = m_tokens.front();
-    m_tokens.pop_front();
-    return ret;
+    if (*this) {
+        Token ret = m_tokens.front();
+        m_tokens.pop_front();
+        return ret;
+    } else {
+        throw std::runtime_error("Attempt to pop from an empty TokenTaker");
+    }
 }
 
 Symbol TokenTaker::peek() const
@@ -28,6 +38,24 @@ Symbol TokenTaker::peek() const
         return m_tokens.front().getSymbol();
     } else {
         return Symbol::NONE;
+    }
+}
+
+const Token& TokenTaker::front() const
+{
+    if (*this) {
+        return m_tokens.front();
+    } else {
+        throw std::runtime_error("Attempt to peek into an empty TokenTaker");
+    }
+}
+
+const Token& TokenTaker::back() const
+{
+    if (*this) {
+        return m_tokens.back();
+    } else {
+        throw std::runtime_error("Attempt to peek into an empty TokenTaker");
     }
 }
 
@@ -57,29 +85,50 @@ void assertToken(Token& token, Symbol expected)
     if (token.getSymbol() != expected) {
         std::stringstream s;
         s << "Unexpected " << token << ", expected " << expected;
-        throw std::runtime_error(s.str());
+        token.throwError(s.str());
     }
 }
 
-/// Makes sure that the given token has the given symbol.
+/// Makes sure that the given TokenTaker is empty.
 void assertEmpty(const TokenTaker& tokens)
 {
     if (tokens) {
         std::stringstream s;
-        s << "Unexpected " << tokens.peek();
-        throw std::runtime_error(s.str());
+        const Token& t = tokens.front();
+        s << "Unexpected " << t;
+        t.throwError(s.str());
+    }
+}
+
+/// Makes sure that the given TokenTaker is not empty.
+/// Will throw an InfolessError, make sure that these errors are caught and
+/// passed on in order to give them debug information.
+void assertNotEmpty(
+    const TokenTaker& tokens, const std::string& expected)
+{
+    if (!tokens) {
+        std::stringstream s;
+        s << "Expected " << expected;
+        throwErrorNoInfo(s.str());
     }
 }
 
 /// Split a TokenTaker into two TokenTakers at the given symbol.
 /// This will exhaust the given TokenTaker.
-std::pair<TokenTaker, TokenTaker> splitAt(TokenTaker&& tokens, Symbol at)
+/// If no split symbol is found, then the second return will be empty.
+/// The third parameter is a pointer to a DebugInfo that will be assigned to the
+/// splitting token's debug info.
+std::pair<TokenTaker, TokenTaker> splitAt(
+    TokenTaker&& tokens, Symbol at, DebugInfo *info)
 {
     TokenTaker left;
     TokenTaker right;
     while (tokens) {
         Token t = tokens.pop();
         if (t.getSymbol() == at) {
+            if (info) {
+                *info = t.getDebugInfo();
+            }
             break;
         } else {
             left.push(std::move(t));
@@ -95,25 +144,30 @@ std::pair<TokenTaker, TokenTaker> splitAt(TokenTaker&& tokens, Symbol at)
 /// Split a TokenTaker into multiple TokenTakers at the given symbol.
 /// This will exhaust the given TokenTaker.
 /// If require_end is true, then the last symbol must be the delimiter.
-std::vector<TokenTaker> splitMultiple(TokenTaker& tokens, Symbol at, bool require_end)
+void splitMultiple(TokenTaker& tokens, Symbol at, bool require_end,
+    std::function<void(TokenTaker)> func)
 {
-    std::vector<TokenTaker> ret{TokenTaker{}};
+    std::vector<TokenTaker> ret{};
+    TokenTaker taker;
     while (tokens) {
         Token t = tokens.pop();
-        if (t.getSymbol() == at) {
-            ret.emplace_back();
-        } else {
-            ret.back().push(std::move(t));
+        if (t.getSymbol() != at) {
+            taker.push(std::move(t));
+        }
+        if (t.getSymbol() == at || (!tokens && taker)) {
+            try {
+                func(taker);
+            } catch (InfolessError& e) {
+                t.throwError(e.what());
+            }
+            taker.clear();
+        }
+        if (t.getSymbol() != at && require_end && !tokens) {
+            std::stringstream s;
+            s << "Expected " << at;
+            t.throwError(s.str());
         }
     }
-    if (!ret.back()) {
-        ret.pop_back();
-    } else if (require_end) {
-        std::stringstream s;
-        s << "Expected semicolon";
-        throw std::runtime_error(s.str());
-    }
-    return ret;
 }
 
 /// Parses a single function from the given tokens. Returns a pair containint
@@ -125,11 +179,15 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
     Token token_fname     = tokens.pop();
     Token token_arguments = tokens.pop();
     Token token_block     = tokens.pop();
+    // Semicolons are inserted by the parser after all blocks. Programmers
+    // will not actually be inserting semicolons after functions.
+    Token token_linesep   = tokens.pop();
     // check tokens
     assertToken(token_function, Symbol::FUNCTION);
     assertToken(token_fname, Symbol::IDENTIFIER);
     assertToken(token_arguments, Symbol::PARENTHESIS);
     assertToken(token_block, Symbol::BLOCK);
+    assertToken(token_linesep, Symbol::LINESEP);
     // parse tokens
     std::vector<std::string> inputs;
     std::vector<std::string> outputs;
@@ -139,21 +197,24 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
     // inputs are separated from outputs by the :  symbol (IOSEP)
     // The : symbol is not required. If it is not there, then all paramters are
     // treated as inputs
-    std::tie(itaker, otaker) = splitAt(std::move(argtaker), Symbol::IOSEP);
-    for (auto& tokens : splitMultiple(itaker, Symbol::COMMA, false)) {
+    std::tie(itaker, otaker) = splitAt(
+        std::move(argtaker), Symbol::IOSEP, nullptr);
+    splitMultiple(itaker, Symbol::COMMA, false, [&inputs](auto tokens) {
         // inputs are comma delimited
+        assertNotEmpty(tokens, "identifier");
         Token t = tokens.pop();
         assertToken(t, Symbol::IDENTIFIER);
         assertEmpty(tokens);
         inputs.push_back(t.getIdentifier());
-    }
-    for (auto& tokens : splitMultiple(otaker, Symbol::COMMA, false)) {
+    });
+    splitMultiple(otaker, Symbol::COMMA, false, [&outputs](auto tokens) {
         // outputs are also comma delimited
+        assertNotEmpty(tokens, "identifier");
         Token t = tokens.pop();
         assertToken(t, Symbol::IDENTIFIER);
         assertEmpty(tokens);
         outputs.push_back(t.getIdentifier());
-    }
+    });
     // parse statements
     TokenTaker blocktaker(std::move(token_block.takeBlock()));
     std::vector<StatementPtr> block = parseBlock(blocktaker);
@@ -173,6 +234,11 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
         // parenthesis, parse inside
         Token t = tokens.pop();
         TokenTaker left_taker(std::move(t.takeBlock()));
+        try {
+            assertNotEmpty(left_taker, "expression inside parentheses");
+        } catch (InfolessError& e) {
+            throwError(t.getDebugInfo(), e.what());
+        }
         left = parseExpression(left_taker);
     } else if (first == Symbol::IDENTIFIER) {
         // an identifier is either a function call or a variable
@@ -183,34 +249,43 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
             // its a function call, parse inside of parenthesis as parameters
             TokenTaker param_taker(std::move(args.takeBlock()));
             std::vector<ExpressionPtr> values;
-            for (auto& other : splitMultiple(param_taker, Symbol::COMMA, false)) {
+            splitMultiple(param_taker, Symbol::COMMA, false,
+            [&values](auto tokens) {
+                assertNotEmpty(tokens, "expression before comma");
                 // expressions are comma delimited
-                values.push_back(parseExpression(other));
-                assertEmpty(other);
-            }
+                values.push_back(parseExpression(tokens));
+                assertEmpty(tokens);
+            });
             left = std::make_unique<ExpressionFunction>(
-                t.getIdentifier(), std::move(values));
+                t.getDebugInfo(), t.getIdentifier(), std::move(values));
         } else {
             // its a variable
-            left = std::make_unique<ExpressionVariable>(t.getIdentifier());
+            left = std::make_unique<ExpressionVariable>(
+                t.getDebugInfo(), t.getIdentifier());
         }
     } else if (first == Symbol::LITERAL) {
         Token t = tokens.pop();
-        left = std::make_unique<ExpressionLiteral>(t.getValue());
+        left = std::make_unique<ExpressionLiteral>(
+            t.getDebugInfo(), t.getValue());
     } else {
         std::stringstream s;
-        s << "Expected " << first << " in expression.";
-        throw std::runtime_error(s.str());
+        s << "Unexpected " << first << " in expression.";
+        tokens.front().throwError(s.str());
     }
     auto second = tokens.peek();
     if (second == Symbol::NAND) {
         // If a NAND operator follows the left expression, then parse the
         // expression to the right of the NAND symbol and create a NAND
         // expression.
-        tokens.pop();
+        Token t = tokens.pop();
+        try {
+            assertNotEmpty(tokens, "expression after NAND operator");
+        } catch (InfolessError& e) {
+            throwError(t.getDebugInfo(), e.what());
+        }
         ExpressionPtr right = parseExpression(tokens);
         return std::make_unique<ExpressionNand>(
-            std::move(left), std::move(right));
+            t.getDebugInfo(), std::move(left), std::move(right));
     } else {
         return left;
     }
@@ -221,38 +296,42 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
 std::vector<StatementPtr> parseBlock(TokenTaker& tokens)
 {
     std::vector<StatementPtr> block;
-    for (auto& tokens : splitMultiple(tokens, Symbol::LINESEP, true)) {
-        while (tokens) {
-            block.push_back(parseStatement(tokens));
-        }
-    }
+    splitMultiple(tokens, Symbol::LINESEP, true, [&block](auto tokens) {
+        assertNotEmpty(tokens, "statement before semicolon");
+        block.push_back(parseStatement(tokens));
+    });
     return block;
 }
 
-/// Parses a statement. Will usually exhaust the given TokenTaker, but there
-/// are cases where it will not, such as after an if or while statement.
-/// Care should be taken to handle this case.
+/// Parses a statement. Will exhaust the given TokenTaker.
+/// Make sure that TokenTaker is not exhausted before calling this function.
 StatementPtr parseStatement(TokenTaker& tokens)
 {
     auto first = tokens.peek();
     if (first == Symbol::WHILE || first == Symbol::IF) {
         // if or while
         bool is_while = first == Symbol::WHILE;
-        tokens.pop();
+        Token t = tokens.pop();
         // condition
+        try {
+            assertNotEmpty(tokens, "condition after IF statement");
+        } catch (InfolessError& e) {
+            throwError(t.getDebugInfo(), e.what());
+        }
         ExpressionPtr expr = parseExpression(tokens);
         // block
         Token token_block = tokens.pop();
         assertToken(token_block, Symbol::BLOCK);
         TokenTaker blocktaker(std::move(token_block.takeBlock()));
         std::vector<StatementPtr> block = parseBlock(blocktaker);
+        assertEmpty(tokens);
         // return
         if (is_while) {
             return std::make_unique<StatementWhile>(
-                std::move(expr), std::move(block));
+                t.getDebugInfo(), std::move(expr), std::move(block));
         } else {
             return std::make_unique<StatementIf>(
-                std::move(expr), std::move(block));
+                t.getDebugInfo(), std::move(expr), std::move(block));
         }
     } else if (tokens.contains(Symbol::ASSIGN)) {
         // assignment
@@ -266,27 +345,30 @@ StatementPtr parseStatement(TokenTaker& tokens)
         // split tokens at assignment symbol
         TokenTaker nametaker;
         TokenTaker valuetaker;
+        DebugInfo info;
         std::tie(nametaker, valuetaker) = splitAt(
-            std::move(tokens), Symbol::ASSIGN);
-        for (auto& tokens : splitMultiple(nametaker, Symbol::COMMA, false)) {
+            std::move(tokens), Symbol::ASSIGN, &info);
+        splitMultiple(nametaker, Symbol::COMMA, false, [&names](auto tokens) {
             // expressions are comma delimited
+            assertNotEmpty(tokens, "identifier before comma");
             Token t = tokens.pop();
             assertToken(t, Symbol::IDENTIFIER);
             assertEmpty(tokens);
             names.push_back(t.getIdentifier());
-        }
-        for (auto& tokens : splitMultiple(valuetaker, Symbol::COMMA, false)) {
+        });
+        splitMultiple(valuetaker, Symbol::COMMA, false, [&values](auto tokens) {
             // expressions are comma delimited
+            assertNotEmpty(tokens, "expression after assignment");
             values.push_back(parseExpression(tokens));
             assertEmpty(tokens);
-        }
+        });
         // return
         if (is_var) {
             return std::make_unique<StatementVariable>(
-                std::move(names), std::move(values));
+                info, std::move(names), std::move(values));
         } else {
             return std::make_unique<StatementAssign>(
-                std::move(names), std::move(values));
+                info, std::move(names), std::move(values));
         }
     } else {
         auto expr = parseExpression(tokens);

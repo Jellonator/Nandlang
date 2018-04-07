@@ -5,7 +5,7 @@
 
 Block::Block(const std::vector<std::string>& input_names,
              const std::vector<std::string>& output_names,
-             std::unique_ptr<Block> block, State& state)
+             std::unique_ptr<Block>&& block, State& state)
 {
     m_numOutputs = 0;
     for (const auto& name : output_names) {

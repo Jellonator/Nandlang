@@ -35,10 +35,10 @@ class Token : public Debuggable {
     bool m_value;             // for Literal symbols
     TokenBlock m_block;       // Used for enclosing symbols, e.g. braces
 public:
-    Token(Symbol);
-    Token(Symbol, bool);
-    Token(Symbol, std::string);
-    Token(Symbol, TokenBlock);
+    Token(Symbol, const DebugInfo&);
+    Token(Symbol, bool, const DebugInfo&);
+    Token(Symbol, std::string, const DebugInfo&);
+    Token(Symbol, TokenBlock, const DebugInfo&);
     /// Get the symbol
     Symbol getSymbol() const;
     /// Get this token's identifier
@@ -57,3 +57,6 @@ public:
 
 std::ostream& operator<<(std::ostream&, const Symbol&);
 std::ostream& operator<<(std::ostream&, const Token&);
+
+/// Print out the given token block
+void printBlock(const TokenBlock& block);

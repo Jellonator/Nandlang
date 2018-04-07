@@ -1,5 +1,7 @@
 #include "function.h"
 #include "state.h"
+#include <set>
+#include <sstream>
 
 FunctionExternal::FunctionExternal(
     std::function<void(State&)> func,
@@ -57,5 +59,22 @@ void FunctionInternal::call(State& state) const
 
 void FunctionInternal::check(State& state) const
 {
+    std::set<std::string> namecheck;
+    for (const auto& name : m_inputNames) {
+        if (namecheck.count(name)) {
+            std::stringstream s;
+            s << "Duplicate parameter of name " << name;
+            throwError(s.str());
+        }
+        namecheck.insert(name);
+    }
+    for (const auto& name : m_outputNames) {
+        if (namecheck.count(name)) {
+            std::stringstream s;
+            s << "Duplicate output of name " << name;
+            throwError(s.str());
+        }
+        namecheck.insert(name);
+    }
     checkStatements(state, m_block);
 }

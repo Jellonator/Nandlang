@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 DebugInfo::DebugInfo()
-: line(0), filename(nullptr) {}
+: line(0), column(0), position(0), filename(nullptr) {}
 
 std::ostream& operator<<(std::ostream& stream, const DebugInfo& info)
 {
@@ -11,39 +11,58 @@ std::ostream& operator<<(std::ostream& stream, const DebugInfo& info)
         stream << " in file " << *info.filename;
     }
     if (info.line) {
-        stream << " on line " << info.line;
+        stream << " on line " << info.line << ":" << info.column;
     }
     return stream;
 }
 
+InfolessError::InfolessError(const std::string& what)
+: m_err(what) {}
+
+const std::string& InfolessError::what() const
+{
+    return m_err;
+}
+
 void throwError(const DebugInfo& info, const std::string& what)
 {
-    std::stringstream s;
-    s << "Error" << info << ":\n" << what;
-    throw std::runtime_error(s.str());
+    throw DebugError(info, what);
 }
+
+void throwErrorNoInfo(const std::string& what)
+{
+    throw InfolessError(what);
+}
+
+Debuggable::Debuggable()
+: m_debuginfo() {}
+
+Debuggable::Debuggable(const DebugInfo& info)
+: m_debuginfo(info) {}
 
 void Debuggable::throwError(const std::string& what) const
 {
     ::throwError(m_debuginfo, what);
 }
 
-DebugInfo Debuggable::getDebuginfo() const
+DebugInfo Debuggable::getDebugInfo() const
 {
     return m_debuginfo;
-}
-
-void Debuggable::setDebugLine(size_t line)
-{
-    m_debuginfo.line = line;
-}
-
-void Debuggable::setDebugFile(std::shared_ptr<std::string> filename)
-{
-    m_debuginfo.filename = filename;
 }
 
 void Debuggable::setDebugInfo(const DebugInfo& info)
 {
     m_debuginfo = info;
+}
+
+DebugError::DebugError(const DebugInfo& info, const std::string& what)
+: Debuggable(info) {
+    std::stringstream s;
+    s << "Error" << info << ":\n" << what;
+    m_err = s.str();
+}
+
+const std::string& DebugError::what() const
+{
+    return m_err;
 }

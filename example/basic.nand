@@ -1,14 +1,4 @@
-function foo(i1, i2, i3, i4 : o1, o2, o3, o4) {
-    o1 = i1;
-    o2 = i2;
-    o3 = i3;
-    o4 = i4;
-}
-
 function main() {
-    var t1, t2, t3, t4 = foo(0, 0, 1, 1);
-    putb(t1);
-    putb(t2);
-    putb(t3);
-    putb(t4);
+    var x = 1;
+    x = 0;
 }
