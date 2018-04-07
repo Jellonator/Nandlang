@@ -9,16 +9,16 @@ import os
 env['ENV']['TERM'] = os.environ['TERM']
 
 sources = [
-    "block.cpp",
-    "compiler.cpp",
-    "debug.cpp",
-    "expression.cpp",
-    "function.cpp",
-    "main.cpp",
-    "parse.cpp",
-    "state.cpp",
-    "statement.cpp",
-    "symbol.cpp",
+    "src/block.cpp",
+    "src/compiler.cpp",
+    "src/debug.cpp",
+    "src/expression.cpp",
+    "src/function.cpp",
+    "src/main.cpp",
+    "src/parse.cpp",
+    "src/state.cpp",
+    "src/statement.cpp",
+    "src/symbol.cpp",
 ]
 
 program = env.Program(target='build/nandlang', source=sources)

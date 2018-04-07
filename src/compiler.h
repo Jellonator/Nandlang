@@ -3,6 +3,8 @@
 #include "function.h"
 #include "symbol.h"
 
+/// A class that allows for Tokens to be taken from a TokenBlock in FIFO order,
+/// as well as some other useful functions.
 class TokenTaker {
     TokenBlock m_tokens;
 public:
