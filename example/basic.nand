@@ -1,9 +1,18 @@
+function foo(i1, i2, i3, i4, i5, i6, i7, i8 : o1, o2, o3, o4, o5, o6, o7, o8) {
+    var c = 1;
+    if c {
+        o1 = i1;
+        o2 = i2;
+        o3 = i3;
+        o4 = i4;
+        o5 = i5;
+        c = 0;
+        o6 = i6;
+        o7 = i7;
+        o8 = i8;
+    }
+}
+
 function main() {
-    var x = 1;
-    if x {
-        var y = 0;
-    }
-    if x {
-        var x = 0;
-    }
+    puti8(foo(0, 1, 0, 1, 1, 1, 1, 1));
 }

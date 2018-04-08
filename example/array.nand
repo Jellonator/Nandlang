@@ -1,0 +1,39 @@
+function index1(v1[8], v2[8], i : ret[8]) {
+    if i {
+        ret = v2;
+    } else {
+        ret = v1;
+    }
+}
+
+function index2(v1[16], v2[16], i1, i2 : ret[8]) {
+    if i1 {
+        ret = index1(v2, i2);
+    } else {
+        ret = index1(v1, i2);
+    }
+}
+
+function index3(v1[32], v2[32], i1, i2[2] : ret[8]) {
+    if i1 {
+        ret = index2(v2, i2);
+    } else {
+        ret = index2(v1, i2);
+    }
+}
+
+function index4(v1[64], v2[64], i1, i2[3] : ret[8]) {
+    if i1 {
+        ret = index3(v2, i2);
+    } else {
+        ret = index3(v1, i2);
+    }
+}
+
+function index5(v1[128], v2[128], i1, i2[4] : ret[8]) {
+    if i1 {
+        ret = index4(v2, i2);
+    } else {
+        ret = index4(v1, i2);
+    }
+}

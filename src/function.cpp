@@ -31,51 +31,52 @@ void FunctionExternal::check(State& state) const
 }
 
 FunctionInternal::FunctionInternal(
-    std::vector<std::string>&& inputs,
-    std::vector<std::string>&& outputs,
+    size_t inputs, size_t outputs,
     std::vector<StatementPtr>&& block)
-: m_inputNames(std::move(inputs))
-, m_outputNames(std::move(outputs))
-, m_block(std::move(block)) {}
+: m_inputs(inputs), m_outputs(outputs), m_block(std::move(block)) {}
 
 uint64_t FunctionInternal::getInputNum() const
 {
-    return m_inputNames.size();
+    return m_inputs;
 }
 
 uint64_t FunctionInternal::getOutputNum() const
 {
-    return m_outputNames.size();
+    return m_outputs;
 }
 
 void FunctionInternal::call(State& state) const
 {
-    state.pushBlock(m_inputNames, m_outputNames);
+    // get the current size of the state
+    // :[previous][inputs]
+    size_t prev_size = state.size();
+    // set the variable offset to include all of this function's inputs
+    // [previous]:[inputs]
+    size_t prev_var = state.setVarOffset(prev_size - m_inputs);
+    // put values for outputs onto the stack
+    // [previous]:[inputs][outputs]
+    for (size_t i = 0; i < m_outputs; ++i) {
+        state.push(0);
+    }
+    // resolve statements
     for (const auto& stmt : m_block) {
         stmt->resolve(state);
     }
-    state.popBlock();
+    // put outputs onto the stack
+    // [previous]:[outputs][garbage]
+    for (size_t i = 0; i < m_outputs; i ++) {
+        bool value = state.getVar(i + m_inputs);
+        state.setVar(i, value);
+    }
+    // put variable offset to its previous value
+    // :[previous][outputs][garbage]
+    state.setVarOffset(prev_var);
+    // resize stack to include only the outputs
+    // :[previous][outputs]
+    state.resize(prev_size - m_inputs + m_outputs);
 }
 
 void FunctionInternal::check(State& state) const
 {
-    // make sure that no two parameters have the same name.
-    std::set<std::string> namecheck;
-    for (const auto& name : m_inputNames) {
-        if (namecheck.count(name)) {
-            std::stringstream s;
-            s << "Duplicate input of name " << name;
-            throwError(s.str());
-        }
-        namecheck.insert(name);
-    }
-    for (const auto& name : m_outputNames) {
-        if (namecheck.count(name)) {
-            std::stringstream s;
-            s << "Duplicate output of name " << name;
-            throwError(s.str());
-        }
-        namecheck.insert(name);
-    }
-    checkStatements(state, m_block, namecheck);
+    checkStatements(state, m_block);
 }

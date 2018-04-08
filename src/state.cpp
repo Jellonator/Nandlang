@@ -68,6 +68,7 @@ const std::map<std::string, FunctionExternal> stdlib = {
 };
 
 State::State()
+: m_varOffset(0)
 {
     // load functions
     for (const auto& p : stdlib) {
@@ -105,24 +106,23 @@ bool State::pop()
     return ret;
 }
 
-void State::pushBlock(const std::vector<std::string>& input_names,
-                      const std::vector<std::string>& output_names)
+size_t State::setVarOffset(size_t pos)
 {
-    // the new block will take the place of the old block. Behaves similarly to
-    // a stack.
-    auto new_block = std::make_unique<Block>(
-        input_names, output_names, std::move(m_block), *this);
-    m_block = std::move(new_block);
+    size_t ret = m_varOffset;
+    m_varOffset = pos;
+    return ret;
 }
 
-void State::popBlock()
+void State::setVar(size_t pos, bool value)
 {
-    m_block = std::move(m_block->push(*this));
+    // std::cout << "SET " << pos << " = " << value << std::endl;
+    m_stack.at(m_varOffset + pos) = value;
 }
 
-Block& State::getBlock()
+bool State::getVar(size_t pos) const
 {
-    return *m_block;
+    // std::cout << "GET " << pos << " = " << m_stack.at(m_varOffset + pos) << std::endl;
+    return m_stack.at(m_varOffset + pos);
 }
 
 void State::parse(TokenBlock&& tokens)
@@ -153,7 +153,11 @@ void State::check()
     }
 }
 
-size_t State::size()
+size_t State::size() const
 {
     return m_stack.size();
+}
+
+void State::resize(size_t size) {
+    m_stack.resize(size, 0);
 }

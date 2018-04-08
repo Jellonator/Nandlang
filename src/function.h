@@ -41,12 +41,11 @@ public:
 
 /// An internal Nandlang function
 class FunctionInternal : public Function {
-    std::vector<std::string> m_inputNames;
-    std::vector<std::string> m_outputNames;
+    size_t m_inputs;
+    size_t m_outputs;
     std::vector<StatementPtr> m_block;
 public:
-    FunctionInternal(std::vector<std::string>&& inputs,
-                     std::vector<std::string>&& outputs,
+    FunctionInternal(size_t inputs, size_t outputs,
                      std::vector<StatementPtr>&& block);
     uint64_t getInputNum() const override;
     uint64_t getOutputNum() const override;

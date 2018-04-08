@@ -141,6 +141,13 @@ function fizzbuzz(v1, v2, v3, v4) {
 	}
 }
 
+function putb4(a, b, c, d) {
+	putb(a);
+	putb(b);
+	putb(c);
+	putb(d);
+}
+
 // Entry point.
 function main() {
 	fizzbuzz(0, 0, 0, 1);

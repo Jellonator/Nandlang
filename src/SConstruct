@@ -3,7 +3,6 @@ Import('target')
 
 # source files
 sources = [
-    "block.cpp",
     "compiler.cpp",
     "debug.cpp",
     "expression.cpp",

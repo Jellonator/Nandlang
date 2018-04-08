@@ -79,6 +79,87 @@ TokenTaker::operator bool() const
     return !empty();
 }
 
+NameStack::NameStack()
+: m_prev(nullptr) {}
+
+NameStack::NameStack(NameStack& other)
+: m_prev(&other) {}
+
+bool NameStack::isNameInUse(const std::string& name) const
+{
+    return m_names.count(name);
+}
+
+bool NameStack::isNameDefined(const std::string& name) const
+{
+    if (m_names.count(name) || name == ignoreIdentifier) {
+        return true;
+    } else if (m_prev) {
+        return m_prev->isNameDefined(name);
+    } else {
+        return false;
+    }
+}
+
+size_t NameStack::insert(const std::string& name)
+{
+    if (name == ignoreIdentifier) {
+        return ignorePosition;
+    }
+    size_t ret = m_names.size();
+    m_names[name] = ret;
+    return ret;
+}
+
+size_t NameStack::insertToken(const Token& token)
+{
+    if (isNameInUse(token.getIdentifier())) {
+        std::stringstream s;
+        s << "Attempt to define already existing variable "
+          << token.getIdentifier();
+        token.throwError(s.str());
+        return 0;
+    }
+    return insert(token.getIdentifier());
+}
+
+size_t NameStack::getPosition(const std::string& pos)
+{
+    if (m_prev && m_names.count(pos) == 0) {
+        return m_prev->getPosition(pos);
+    }
+    return m_names.at(pos);
+}
+
+size_t NameStack::getPositionToken(const Token& token)
+{
+    if (token.getIdentifier() == ignoreIdentifier) {
+        std::stringstream s;
+        s << "Attempt to get value of ignored variable";
+        token.throwError(s.str());
+        return 0;
+    }
+    if (!isNameDefined(token.getIdentifier())) {
+        std::stringstream s;
+        s << "Attempt to use undefined variable "
+          << token.getIdentifier();
+        token.throwError(s.str());
+        return 0;
+    } else {
+        return getPosition(token.getIdentifier());
+    }
+}
+
+size_t NameStack::size()
+{
+    size_t ret = m_names.size();
+    if (m_prev) {
+        return ret + m_prev->size();
+    } else {
+        return ret;
+    }
+}
+
 /// Makes sure that the given token has the given symbol.
 void assertToken(Token& token, Symbol expected)
 {
@@ -179,6 +260,7 @@ void splitMultiple(TokenTaker& tokens, Symbol at, bool require_end,
 
 std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
 {
+    NameStack names;
     // get tokens
     Token token_function  = tokens.pop();
     Token token_fname     = tokens.pop();
@@ -194,8 +276,8 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
     assertToken(token_block, Symbol::BLOCK);
     assertToken(token_linesep, Symbol::LINESEP);
     // parse tokens
-    std::vector<std::string> inputs;
-    std::vector<std::string> outputs;
+    // std::vector<std::string> inputs;
+    // std::vector<std::string> outputs;
     TokenTaker itaker;
     TokenTaker otaker;
     TokenTaker argtaker(std::move(token_arguments.takeBlock()));
@@ -204,32 +286,34 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
     // treated as inputs
     std::tie(itaker, otaker) = splitAt(
         std::move(argtaker), Symbol::IOSEP, nullptr);
-    splitMultiple(itaker, Symbol::COMMA, false, [&inputs](auto tokens) {
+    splitMultiple(itaker, Symbol::COMMA, false, [&names](auto tokens) {
         // inputs are comma delimited
         assertNotEmpty(tokens, "identifier");
         Token t = tokens.pop();
         assertToken(t, Symbol::IDENTIFIER);
         assertEmpty(tokens);
-        inputs.push_back(t.getIdentifier());
+        names.insertToken(t);
     });
-    splitMultiple(otaker, Symbol::COMMA, false, [&outputs](auto tokens) {
+    size_t num_inputs = names.size();
+    splitMultiple(otaker, Symbol::COMMA, false, [&names](auto tokens) {
         // outputs are also comma delimited
         assertNotEmpty(tokens, "identifier");
         Token t = tokens.pop();
         assertToken(t, Symbol::IDENTIFIER);
         assertEmpty(tokens);
-        outputs.push_back(t.getIdentifier());
+        names.insertToken(t);
     });
+    size_t num_outputs = names.size() - num_inputs;
     // parse statements
     TokenTaker blocktaker(std::move(token_block.takeBlock()));
-    std::vector<StatementPtr> block = parseBlock(blocktaker);
+    std::vector<StatementPtr> block = parseBlock(blocktaker, names);
     // return
     return std::pair<std::string, FunctionPtr>(token_fname.getIdentifier(),
-        std::make_unique<FunctionInternal>(std::move(inputs),
-        std::move(outputs), std::move(block)));
+        std::make_unique<FunctionInternal>(num_inputs, num_outputs,
+        std::move(block)));
 }
 
-ExpressionPtr parseExpression(TokenTaker& tokens)
+ExpressionPtr parseExpression(TokenTaker& tokens, NameStack& names)
 {
     auto first = tokens.peek();
     ExpressionPtr left = nullptr;
@@ -242,7 +326,7 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
         } catch (InfolessError& e) {
             throwError(t.getDebugInfo(), e.what());
         }
-        left = parseExpression(left_taker);
+        left = parseExpression(left_taker, names);
     } else if (first == Symbol::IDENTIFIER) {
         // an identifier is either a function call or a variable
         Token t = tokens.pop();
@@ -253,10 +337,10 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
             TokenTaker param_taker(std::move(args.takeBlock()));
             std::vector<ExpressionPtr> values;
             splitMultiple(param_taker, Symbol::COMMA, false,
-            [&values](auto tokens) {
+            [&values, &names](auto tokens) {
                 assertNotEmpty(tokens, "expression before comma");
                 // expressions are comma delimited
-                values.push_back(parseExpression(tokens));
+                values.push_back(parseExpression(tokens, names));
                 assertEmpty(tokens);
             });
             left = std::make_unique<ExpressionFunction>(
@@ -264,7 +348,7 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
         } else {
             // its a variable
             left = std::make_unique<ExpressionVariable>(
-                t.getDebugInfo(), t.getIdentifier());
+                t.getDebugInfo(), names.getPositionToken(t));
         }
     } else if (first == Symbol::LITERAL) {
         // literal value
@@ -287,7 +371,7 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
         } catch (InfolessError& e) {
             throwError(t.getDebugInfo(), e.what());
         }
-        ExpressionPtr right = parseExpression(tokens);
+        ExpressionPtr right = parseExpression(tokens, names);
         return std::make_unique<ExpressionNand>(
             t.getDebugInfo(), std::move(left), std::move(right));
     } else {
@@ -295,7 +379,7 @@ ExpressionPtr parseExpression(TokenTaker& tokens)
     }
 }
 
-StatementPtr parseStatement(TokenTaker& tokens)
+StatementPtr parseStatement(TokenTaker& tokens, NameStack& names)
 {
     auto first = tokens.peek();
     if (first == Symbol::WHILE || first == Symbol::IF) {
@@ -308,12 +392,13 @@ StatementPtr parseStatement(TokenTaker& tokens)
         } catch (InfolessError& e) {
             throwError(t.getDebugInfo(), e.what());
         }
-        ExpressionPtr expr = parseExpression(tokens);
+        ExpressionPtr expr = parseExpression(tokens, names);
         // block
         Token token_block = tokens.pop();
         assertToken(token_block, Symbol::BLOCK);
         TokenTaker blocktaker(std::move(token_block.takeBlock()));
-        std::vector<StatementPtr> block = parseBlock(blocktaker);
+        NameStack subnames(names);
+        std::vector<StatementPtr> block = parseBlock(blocktaker, subnames);
         assertEmpty(tokens);
         // return
         if (is_while) {
@@ -330,7 +415,7 @@ StatementPtr parseStatement(TokenTaker& tokens)
             is_var = true;
             tokens.pop();
         }
-        std::vector<std::string> names;
+        std::vector<size_t> positions;
         std::vector<ExpressionPtr> values;
         // split tokens at assignment symbol
         TokenTaker nametaker;
@@ -338,42 +423,48 @@ StatementPtr parseStatement(TokenTaker& tokens)
         DebugInfo info;
         std::tie(nametaker, valuetaker) = splitAt(
             std::move(tokens), Symbol::ASSIGN, &info);
-        splitMultiple(nametaker, Symbol::COMMA, false, [&names](auto tokens) {
+        splitMultiple(nametaker, Symbol::COMMA, false,
+            [&positions, &names, is_var](auto tokens) {
             // expressions are comma delimited
             assertNotEmpty(tokens, "identifier before comma");
             Token t = tokens.pop();
             assertToken(t, Symbol::IDENTIFIER);
             assertEmpty(tokens);
-            names.push_back(t.getIdentifier());
+            if (is_var) {
+                positions.push_back(names.insertToken(t));
+            } else {
+                positions.push_back(names.getPositionToken(t));
+            }
         });
-        splitMultiple(valuetaker, Symbol::COMMA, false, [&values](auto tokens) {
+        splitMultiple(valuetaker, Symbol::COMMA, false,
+            [&values, &names](auto tokens) {
             // expressions are comma delimited
             assertNotEmpty(tokens, "expression after assignment");
-            values.push_back(parseExpression(tokens));
+            values.push_back(parseExpression(tokens, names));
             assertEmpty(tokens);
         });
         // return
         if (is_var) {
             return std::make_unique<StatementVariable>(
-                info, std::move(names), std::move(values));
+                info, std::move(positions), std::move(values));
         } else {
             return std::make_unique<StatementAssign>(
-                info, std::move(names), std::move(values));
+                info, std::move(positions), std::move(values));
         }
     } else {
         // this is probably an expression. An error will result if it is not.
-        auto expr = parseExpression(tokens);
+        auto expr = parseExpression(tokens, names);
         assertEmpty(tokens);
         return std::make_unique<StatementExpression>(std::move(expr));
     }
 }
 
-std::vector<StatementPtr> parseBlock(TokenTaker& tokens)
+std::vector<StatementPtr> parseBlock(TokenTaker& tokens, NameStack& names)
 {
     std::vector<StatementPtr> block;
-    splitMultiple(tokens, Symbol::LINESEP, true, [&block](auto tokens) {
+    splitMultiple(tokens, Symbol::LINESEP, true, [&block, &names](auto tokens) {
         assertNotEmpty(tokens, "statement before semicolon");
-        block.push_back(parseStatement(tokens));
+        block.push_back(parseStatement(tokens, names));
     });
     return block;
 }

@@ -3,22 +3,20 @@
 #include <stdexcept>
 #include <sstream>
 
-void checkStatements(State& state, const std::vector<StatementPtr>& statements,
-    const std::set<std::string>& namecheck)
+void checkStatements(State& state, const std::vector<StatementPtr>& statements)
 {
-    std::set<std::string> names(namecheck.begin(), namecheck.end());
     for (const auto& stmt : statements) {
-        stmt->check(state, names);
+        stmt->check(state);
     }
 }
 
 Statement::Statement(const DebugInfo& info) : Debuggable(info) {}
 
 StatementAssign::StatementAssign(const DebugInfo& info,
-    std::vector<std::string>&& names,
+    std::vector<size_t>&& vars,
     std::vector<ExpressionPtr>&& expressions)
 : Statement(info)
-, m_variables(std::move(names))
+, m_variables(std::move(vars))
 , m_expressions(std::move(expressions)) {}
 
 void StatementAssign::resolve(State& state) const
@@ -26,28 +24,15 @@ void StatementAssign::resolve(State& state) const
     for (const auto& expr : m_expressions) {
         expr->resolve(state);
     }
-    Block& block = state.getBlock();
     for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); ++iter) {
-        // pop in reverse order
         bool value = state.pop();
-        if (*iter != ignoreIdentifier) {
-            block.store(*iter, value);
-        }
+        state.setVar(*iter, value);
     }
 }
 
-void StatementAssign::check(State& state, std::set<std::string>& names) const
+void StatementAssign::check(State& state) const
 {
-    for (const auto& variable : m_variables) {
-        if (variable != ignoreIdentifier) {
-            if (names.count(variable) == 0) {
-                std::stringstream s;
-                s << "Attempt to assign value to undefined variable " << variable;
-                throwError(s.str());
-            }
-        }
-    }
-    checkExpressions(state, m_expressions, names);
+    checkExpressions(state, m_expressions);
     if (m_variables.size() != countOutputs(state, m_expressions)) {
         std::stringstream s;
         s << "Not enough outputs for assignment.";
@@ -56,41 +41,29 @@ void StatementAssign::check(State& state, std::set<std::string>& names) const
 }
 
 StatementVariable::StatementVariable(const DebugInfo& info,
-    std::vector<std::string>&& names,
+    std::vector<size_t>&& vars,
     std::vector<ExpressionPtr>&& expressions)
 : Statement(info)
-, m_variables(std::move(names))
+, m_variables(std::move(vars))
 , m_expressions(std::move(expressions)) {}
 
 void StatementVariable::resolve(State& state) const
 {
+    for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); ++iter) {
+        state.push(0);
+    }
     for (const auto& expr : m_expressions) {
         expr->resolve(state);
     }
-    Block& block = state.getBlock();
     for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); ++iter) {
-        // pop in reverse order
-        if (*iter != ignoreIdentifier) {
-            block.create(*iter, state.pop());
-        } else {
-            state.pop();
-        }
+        bool value = state.pop();
+        state.setVar(*iter, value);
     }
 }
 
-void StatementVariable::check(State& state, std::set<std::string>& names) const
+void StatementVariable::check(State& state) const
 {
-    for (const auto& variable : m_variables) {
-        if (variable != ignoreIdentifier) {
-            if (names.count(variable) != 0) {
-                std::stringstream s;
-                s << "Attempt to declare an already existing variable " << variable;
-                throwError(s.str());
-            }
-            names.insert(variable);
-        }
-    }
-    checkExpressions(state, m_expressions, names);
+    checkExpressions(state, m_expressions);
     if (m_variables.size() != countOutputs(state, m_expressions)) {
         std::stringstream s;
         s << "Not enough outputs for variables.";
@@ -106,29 +79,27 @@ StatementIf::StatementIf(const DebugInfo& info, ExpressionPtr cond,
 
 void StatementIf::resolve(State& state) const
 {
+    size_t prev = state.size();
     // check condition
     m_condition->resolve(state);
     if (state.pop()) {
-        // push an empty block
-        state.pushBlock({}, {});
         // call statements
         for (const auto& stmt : m_block) {
             stmt->resolve(state);
         }
-        // pop block
-        state.popBlock();
     }
+    state.resize(prev);
 }
 
-void StatementIf::check(State& state, std::set<std::string>& names) const
+void StatementIf::check(State& state) const
 {
     if (m_condition->getOutputNum(state) != 1) {
         std::stringstream s;
         s << "If statement expects only 1 input.";
         throwError(s.str());
     }
-    m_condition->check(state, names);
-    checkStatements(state, m_block, names);
+    m_condition->check(state);
+    checkStatements(state, m_block);
 }
 
 StatementWhile::StatementWhile(const DebugInfo& info, ExpressionPtr cond,
@@ -140,29 +111,29 @@ StatementWhile::StatementWhile(const DebugInfo& info, ExpressionPtr cond,
 void StatementWhile::resolve(State& state) const
 {
     // same as for if, but in a loop
+    size_t prev = state.size();
     for (;;) {
         m_condition->resolve(state);
         if (!state.pop()) {
             // only difference is how the exit condition is handled
             return;
         }
-        state.pushBlock({}, {});
         for (const auto& stmt : m_block) {
             stmt->resolve(state);
         }
-        state.popBlock();
     }
+    state.resize(prev);
 }
 
-void StatementWhile::check(State& state, std::set<std::string>& names) const
+void StatementWhile::check(State& state) const
 {
     if (m_condition->getOutputNum(state) != 1) {
         std::stringstream s;
         s << "While statement expects only 1 input.";
         throwError(s.str());
     }
-    m_condition->check(state, names);
-    checkStatements(state, m_block, names);
+    m_condition->check(state);
+    checkStatements(state, m_block);
 }
 
 StatementExpression::StatementExpression(
@@ -175,12 +146,12 @@ void StatementExpression::resolve(State& state) const
     m_expression->resolve(state);
 }
 
-void StatementExpression::check(State& state, std::set<std::string>& names) const
+void StatementExpression::check(State& state) const
 {
     if (m_expression->getOutputNum(state) > 0) {
         std::stringstream s;
         s << "Unhandled outputs from expression.";
         throwError(s.str());
     }
-    m_expression->check(state, names);
+    m_expression->check(state);
 }

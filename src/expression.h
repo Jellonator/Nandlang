@@ -8,6 +8,8 @@
 
 /// Special identifier used for ignoring parts of a function's output
 extern const std::string ignoreIdentifier;
+/// The variable position of an ignored variable
+extern const size_t ignorePosition;
 
 class State;
 
@@ -25,7 +27,7 @@ public:
     /// Check the expression to ensure consistency and integrity.
     /// Throws an exception on failure. First argument is the execution state,
     /// and the second argument is a set of variable names.
-    virtual void check(State&, std::set<std::string>&) const = 0;
+    virtual void check(State&) const = 0;
 };
 
 typedef std::unique_ptr<Expression> ExpressionPtr;
@@ -37,7 +39,7 @@ size_t countOutputs(State& state,
 
 /// Apply the check function for all of the given expressions
 void checkExpressions(State& state,
-    const std::vector<ExpressionPtr>& expressions, std::set<std::string>&);
+    const std::vector<ExpressionPtr>& expressions);
 
 /// A NAND expression. NANDS two values together
 class ExpressionNand : public Expression {
@@ -48,7 +50,7 @@ public:
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
-    void check(State&, std::set<std::string>&) const override;
+    void check(State&) const override;
 };
 
 /// A function expression. Calls a function when evaluated
@@ -61,18 +63,18 @@ public:
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
-    void check(State&, std::set<std::string>&) const override;
+    void check(State&) const override;
 };
 
 /// A variable expression. Represents a variable
 class ExpressionVariable : public Expression {
-    std::string m_name;
+    size_t m_pos;
 public:
-    ExpressionVariable(const DebugInfo&, const std::string&);
+    ExpressionVariable(const DebugInfo&, size_t);
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
-    void check(State&, std::set<std::string>&) const override;
+    void check(State&) const override;
 };
 
 /// A literal expression
@@ -83,5 +85,5 @@ public:
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
-    void check(State&, std::set<std::string>&) const override;
+    void check(State&) const override;
 };

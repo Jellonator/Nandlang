@@ -4,7 +4,6 @@
 #include <map>
 #include "function.h"
 #include "symbol.h"
-#include "block.h"
 
 /// Represents the execution state
 /// Always push in forward order, and always pop in reverse order.
@@ -13,8 +12,8 @@ class State {
     std::vector<bool> m_stack;
     /// Maps names to functions
     std::map<std::string, FunctionPtr> m_functions;
-    /// The current block
-    BlockPtr m_block;
+    /// Offset pointer for variables
+    size_t m_varOffset;
 public:
     State();
     /// Get a function from name
@@ -25,19 +24,23 @@ public:
     void push(bool value);
     /// Pop value from stack
     bool pop();
-    /// Push a block onto the stack
-    void pushBlock(const std::vector<std::string>& input_names,
-                   const std::vector<std::string>& output_names);
-    /// Pop a block from the stack
-    void popBlock();
+    /// Set the variable offset. Returns the previous variable offset.
+    size_t setVarOffset(size_t);
+    /// Set a variable
+    void setVar(size_t, bool);
+    /// Get a variable
+    bool getVar(size_t) const;
     /// Parse a file to create functions
     void parse(TokenBlock&& tokens);
-    /// Get the current block
-    Block& getBlock();
     /// check this state for consistency and integrity
     /// will throw an exception if one of the following rules are broken:
     /// * inputs and outputs are mismatched in number
+    /// * a variable is defined more than once
+    /// * attempt to use an undefined variable
+    /// * attempt to call an undefined function
     void check();
     /// Get number of values on stack
-    size_t size();
+    size_t size() const;
+    /// Resize the stack
+    void resize(size_t);
 };
