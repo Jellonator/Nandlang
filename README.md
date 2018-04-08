@@ -12,8 +12,12 @@ NAND gate. As such, the only operators in this programming language are the NAND
 operator, function calls, and variable assignment. Nandlang is an imperative
 programming language.
 
+## Downloading
+You can download the latest release for this program from
+https://github.com/Jellonator/Nandlang/releases.
+
 ## Building
-To build this program, you will need to install scons. No matter what platform
+To build this program, you will need to install scons.
 
 ### Ubuntu
 Installing dependencies:
