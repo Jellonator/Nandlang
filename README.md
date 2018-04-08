@@ -12,6 +12,37 @@ NAND gate. As such, the only operators in this programming language are the NAND
 operator, function calls, and variable assignment. Nandlang is an imperative
 programming language.
 
+## Building
+To build this program, you will need to install scons. No matter what platform
+
+### Ubuntu
+Installing dependencies:
+
+```
+sudo apt install scons
+```
+
+Building the program:
+
+```
+scons
+```
+
+Running:
+```
+./nandlang <nandlang script file>
+```
+
+### Other platforms
+Download scons for your platform from https://scons.org/pages/download.html
+
+I'm not sure what the steps for building the program with scons is for other
+platforms, but it's probably very similar as it is for on Ubuntu.
+
+Alternatively if you're using an IDE such as Visual Studio, you can just create
+a new project, add all of the source files from the /src/ directory, then
+compile it that way. Make sure to set it to use c++14 if you do this however.
+
 ## Syntax highlighting
 Since this language shares many keywords and syntax with the Javascript
 programming language (which is odd since I've barely even touched it), I would

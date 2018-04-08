@@ -1,0 +1,19 @@
+Import('env')
+Import('target')
+
+# source files
+sources = [
+    "block.cpp",
+    "compiler.cpp",
+    "debug.cpp",
+    "expression.cpp",
+    "function.cpp",
+    "main.cpp",
+    "parse.cpp",
+    "state.cpp",
+    "statement.cpp",
+    "symbol.cpp",
+]
+
+# Create program
+program = env.Program(target=target, source=sources, LINKFLAGS=['-static'])

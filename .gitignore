@@ -2,3 +2,4 @@
 .stdafx.c++.pch
 *.o
 build
+nandlang*
