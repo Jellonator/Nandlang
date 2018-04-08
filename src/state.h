@@ -18,6 +18,8 @@ class State {
 public:
     State();
     /// Get a function from name
+    bool hasFunction(const std::string& name);
+    /// Get a function from name
     Function& getFunction(const std::string& name);
     /// push value to stack
     void push(bool value);

@@ -1,5 +1,3 @@
-function foo() {}
-
 function main() {
     var x = 1;
     if x {

@@ -39,18 +39,20 @@ void StatementAssign::resolve(State& state) const
 void StatementAssign::check(State& state, std::set<std::string>& names) const
 {
     for (const auto& variable : m_variables) {
-        if (names.count(variable) == 0) {
-            std::stringstream s;
-            s << "Attempt to assign value to undefined variable " << variable;
-            throwError(s.str());
+        if (variable != ignoreIdentifier) {
+            if (names.count(variable) == 0) {
+                std::stringstream s;
+                s << "Attempt to assign value to undefined variable " << variable;
+                throwError(s.str());
+            }
         }
     }
+    checkExpressions(state, m_expressions, names);
     if (m_variables.size() != countOutputs(state, m_expressions)) {
         std::stringstream s;
         s << "Not enough outputs for assignment.";
         throwError(s.str());
     }
-    checkExpressions(state, m_expressions, names);
 }
 
 StatementVariable::StatementVariable(const DebugInfo& info,
@@ -79,19 +81,21 @@ void StatementVariable::resolve(State& state) const
 void StatementVariable::check(State& state, std::set<std::string>& names) const
 {
     for (const auto& variable : m_variables) {
-        if (names.count(variable) != 0) {
-            std::stringstream s;
-            s << "Attempt to declare an already existing variable " << variable;
-            throwError(s.str());
+        if (variable != ignoreIdentifier) {
+            if (names.count(variable) != 0) {
+                std::stringstream s;
+                s << "Attempt to declare an already existing variable " << variable;
+                throwError(s.str());
+            }
+            names.insert(variable);
         }
-        names.insert(variable);
     }
+    checkExpressions(state, m_expressions, names);
     if (m_variables.size() != countOutputs(state, m_expressions)) {
         std::stringstream s;
         s << "Not enough outputs for variables.";
         throwError(s.str());
     }
-    checkExpressions(state, m_expressions, names);
 }
 
 StatementIf::StatementIf(const DebugInfo& info, ExpressionPtr cond,

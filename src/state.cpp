@@ -61,9 +61,9 @@ void fn_iogood(State& state) {
 const std::map<std::string, FunctionExternal> stdlib = {
     {"putb",   {fn_putb,   1, 0}},
     {"puti8",  {fn_puti8,  8, 0}},
+    {"endl",   {fn_endl,   0, 0}},
     {"putc",   {fn_putc,   8, 0}},
     {"getc",   {fn_getc,   0, 8}},
-    {"endl",   {fn_endl,   0, 0}},
     {"iogood", {fn_iogood, 0, 1}}
 };
 
@@ -75,6 +75,11 @@ State::State()
         // Debuggable is copyable.
         m_functions[p.first] = std::make_unique<FunctionExternal>(p.second);
     }
+}
+
+bool State::hasFunction(const std::string& name)
+{
+    return m_functions.count(name) > 0;
 }
 
 Function& State::getFunction(const std::string& name)
@@ -135,6 +140,16 @@ void State::check()
 {
     for (const auto& func : m_functions) {
         func.second->check(*this);
+    }
+    if (m_functions.count("main") == 0) {
+        throwErrorNoInfo("No main function has been declared");
+    }
+    Function& mainfunc = getFunction("main");
+    if (mainfunc.getInputNum() > 0) {
+        throwErrorNoInfo("Main function should have 0 inputs");
+    }
+    if (mainfunc.getOutputNum() > 0) {
+        throwErrorNoInfo("Main function should have 0 outputs");
     }
 }
 

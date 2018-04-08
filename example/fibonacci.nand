@@ -1,0 +1,121 @@
+// not logic gate
+function not(in : out) {
+    out = in ! in;
+}
+
+// and logic gate
+function and(a, b : out) {
+    out = not(a ! b);
+}
+
+// or logic gate
+function or(a, b : out) {
+    out = not(a) ! not(b);
+}
+
+// xor logic gate
+function xor(a, b : out) {
+    out = or(and(a, not(b)), and(not(a), b));
+}
+
+// returns true if a and b are equal
+function eq(a, b : out) {
+    out = not(xor(a, b));
+}
+
+// full adder
+function add(a, b, cin : v, cout) {
+    v = xor(cin, xor(a, b));
+    cout = or(and(a, b), and(xor(a, b), cin));
+}
+
+// 8 bit adder
+function add8(
+    a1, a2, a3, a4, a5, a6, a7, a8,
+    b1, b2, b3, b4, b5, b6, b7, b8
+  : o1, o2, o3, o4, o5, o6, o7, o8) {
+    var c = 0;
+    o8, c = add(a8, b8, c);
+    o7, c = add(a7, b7, c);
+    o6, c = add(a6, b6, c);
+    o5, c = add(a5, b5, c);
+    o4, c = add(a4, b4, c);
+    o3, c = add(a3, b3, c);
+    o2, c = add(a2, b2, c);
+    o1, c = add(a1, b1, c);
+}
+
+// returns the two's complement of the given integer
+function complement8(
+    i1, i2, i3, i4, i5, i6, i7, i8
+  : o1, o2, o3, o4, o5, o6, o7, o8) {
+    o1, o2, o3, o4, o5, o6, o7, o8 = add8(
+    not(i1), not(i2), not(i3), not(i4), not(i5), not(i6), not(i7), not(i8),
+    0, 0, 0, 0, 0, 0, 0, 1);
+}
+
+// 8 bit subtraction
+function sub8(
+    a1, a2, a3, a4, a5, a6, a7, a8,
+    b1, b2, b3, b4, b5, b6, b7, b8
+  : o1, o2, o3, o4, o5, o6, o7, o8) {
+    o1, o2, o3, o4, o5, o6, o7, o8 = add8(
+    a1, a2, a3, a4, a5, a6, a7, a8,
+    complement8(b1, b2, b3, b4, b5, b6, b7, b8));
+}
+
+// 8 bit equality
+function equal8(
+    a1, a2, a3, a4, a5, a6, a7, a8,
+    b1, b2, b3, b4, b5, b6, b7, b8
+  : out) {
+    out = and(
+        and(and(eq(a1, b1), eq(a2, b2)), and(eq(a3, b3), eq(a4, b4))),
+        and(and(eq(a5, b5), eq(a6, b6)), and(eq(a7, b7), eq(a8, b8))));
+}
+
+// returns the Fibonacci number for the given input
+function fibonacci(
+    i1, i2, i3, i4, i5, i6, i7, i8
+  : o1, o2, o3, o4, o5, o6, o7, o8) {
+    var is_equal = equal8(i1, i2, i3, i4, i5, i6, i7, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    if is_equal {
+        // return input if equal to 1 or 0
+        o1 = i1;
+        o2 = i2;
+        o3 = i3;
+        o4 = i4;
+        o5 = i5;
+        o6 = i6;
+        o7 = i7;
+        o8 = i8;
+    }
+    if not(is_equal) {
+        // o = fibonacci(i - 1) + fibonacci(i - 2);
+        o1, o2, o3, o4, o5, o6, o7, o8 = add8(
+            fibonacci(sub8(i1, i2, i3, i4, i5, i6, i7, i8, 0, 0, 0, 0, 0, 0, 0, 1)),
+            fibonacci(sub8(i1, i2, i3, i4, i5, i6, i7, i8, 0, 0, 0, 0, 0, 0, 1, 0))
+        );
+    }
+}
+
+function main()
+{
+    var v1, v2, v3, v4, v5, v6, v7, v8 = 0, 0, 0, 0, 0, 0, 0, 0;
+    while not(equal8(v1, v2, v3, v4, v5, v6, v7, v8, 0, 0, 0, 0, 1, 1, 1, 0)) {
+        // to output strings multiple individual putc calls are needed
+        putc('F');
+        putc('i');
+        putc('b');
+        putc(' ');
+        puti8(v1, v2, v3, v4, v5, v6, v7, v8);
+        putc(' ');
+        putc('=');
+        putc(' ');
+        puti8(fibonacci(v1, v2, v3, v4, v5, v6, v7, v8));
+        endl();
+        // increment
+        v1, v2, v3, v4, v5, v6, v7, v8 = add8(
+            v1, v2, v3, v4, v5, v6, v7, v8, 0, 0, 0, 0, 0, 0, 0, 1);
+    }
+}

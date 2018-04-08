@@ -1,9 +1,5 @@
 env = Environment()
-env.Append(CXXFLAGS = '-std=c++14 -Wall -g')
-# env.Append(CXXFLAGS = '-g -rdynamic')
-# env.Append(LINKFLAGS = ['-rdynamic'])
-
-env.MergeFlags(['!pkg-config libunwind --cflags --libs', '-rdynamic', '-ggdb'])
+env.MergeFlags(['-std=c++14', '-Wall', '-O2']);
 
 import os
 env['ENV']['TERM'] = os.environ['TERM']

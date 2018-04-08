@@ -83,18 +83,29 @@ void ExpressionFunction::resolve(State& state) const
 
 uint64_t ExpressionFunction::getInputNum(State& state) const
 {
+    if (!state.hasFunction(m_functionName)) {
+        return 0;
+    }
     Function& func = state.getFunction(m_functionName);
     return func.getInputNum();
 }
 
 uint64_t ExpressionFunction::getOutputNum(State& state) const
 {
+    if (!state.hasFunction(m_functionName)) {
+        return 0;
+    }
     Function& func = state.getFunction(m_functionName);
     return func.getOutputNum();
 }
 
 void ExpressionFunction::check(State& state, std::set<std::string>& names) const
 {
+    if (!state.hasFunction(m_functionName)) {
+        std::stringstream s;
+        s << "Call to non-existent function " << m_functionName;
+        throwError(s.str());
+    }
     Function& func = state.getFunction(m_functionName);
     if (func.getInputNum() != countOutputs(state, m_arguments)) {
         std::stringstream s;
