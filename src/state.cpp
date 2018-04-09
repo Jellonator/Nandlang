@@ -58,13 +58,36 @@ void fn_iogood(State& state) {
     state.push(bool(std::cin));
 }
 
+/// Implements AND logic gate
+void fn_and(State& state) {
+    bool l = state.pop();
+    bool r = state.pop();
+    state.push(l && r);
+}
+
+/// Implements OR logic gate
+void fn_or(State& state) {
+    bool l = state.pop();
+    bool r = state.pop();
+    state.push(l || r);
+}
+
+/// Implements NOT logic gate
+void fn_not(State& state) {
+    bool b = state.pop();
+    state.push(!b);
+}
+
 const std::map<std::string, FunctionExternal> stdlib = {
     {"putb",   {fn_putb,   1, 0}},
     {"puti8",  {fn_puti8,  8, 0}},
     {"endl",   {fn_endl,   0, 0}},
     {"putc",   {fn_putc,   8, 0}},
     {"getc",   {fn_getc,   0, 8}},
-    {"iogood", {fn_iogood, 0, 1}}
+    {"iogood", {fn_iogood, 0, 1}},
+    {"and",    {fn_and,    2, 1}},
+    {"or",     {fn_or,     2, 1}},
+    {"not",    {fn_not,    1, 1}}
 };
 
 State::State()
