@@ -6,11 +6,31 @@ A programming language based on NAND completeness.
 Created by James Beedie
 
 ## About
+Do you hate modern programming languages? All pretentious with their "zero cost
+abstractions", "RAII principles", and "object oriented programming"? Do you
+wish that there was a language that so simple, it only had one type and just a
+few operators? Well, look no further, because Nandlang is the perfect choice
+for you!
+
 Nandlang is a programming language that is based on the idea of NAND
 completeness. All common operations and logic gates can be derived from the
 NAND gate. As such, the only operators in this programming language are the NAND
 operator, function calls, and variable assignment. Nandlang is an imperative
 programming language.
+
+### What this is
+This is a simple, esoteric language designed mostly as a fun project. It was
+also designed to get me a good grade for my computer science final project
+assignment.
+
+### What this is not
+This is not a serious language with any practical value whatsoever. I highly
+doubt that anyone actually wants to program an entire program using just bits.
+
+I'm also not currently taking pull requests for this repository because I
+haven't yet submitted this as a final project for my computer science class yet,
+and all of the code needs to be my own. I may reconsider after May 12th, which
+is when this will be submitted.
 
 ## Downloading
 You can download the latest release for this program from
