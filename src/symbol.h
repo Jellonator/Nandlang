@@ -1,8 +1,6 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <map>
-#include <set>
 #include <deque>
 #include <iostream>
 #include "debug.h"
@@ -13,6 +11,10 @@ enum class Symbol {
     FUNCTION, WHILE, IF, VAR, LINESEP, NAND, INDEX, ELSE, NONE
 };
 
+/// Special identifier used for ignoring parts of a function's output
+extern const std::string ignoreIdentifier;
+/// The variable position of an ignored variable
+extern const size_t ignorePosition;
 /// Maps single character symbols to Symbol values
 extern const std::map<char, Symbol> symbolMap;
 /// Maps keyword identifiers to Symbol values

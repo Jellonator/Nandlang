@@ -4,204 +4,6 @@
 #include <sstream>
 #include <functional>
 
-/// Generates a unique name for the given identifier and index combo
-std::string generateNameIndexed(const std::string& name, size_t index)
-{
-    std::stringstream s;
-    s << name << ":" << index;
-    return s.str();
-}
-
-TokenTaker::TokenTaker(TokenBlock&& block)
-: m_tokens(block) {}
-
-TokenTaker::TokenTaker() {}
-
-void TokenTaker::push(Token&& token)
-{
-    m_tokens.push_back(std::move(token));
-}
-
-void TokenTaker::clear()
-{
-    m_tokens.clear();
-}
-
-Token TokenTaker::pop()
-{
-    if (*this) {
-        Token ret = m_tokens.front();
-        m_tokens.pop_front();
-        return ret;
-    } else {
-        throw std::runtime_error("Attempt to pop from an empty TokenTaker");
-    }
-}
-
-Symbol TokenTaker::peek() const
-{
-    if (*this) {
-        return m_tokens.front().getSymbol();
-    } else {
-        return Symbol::NONE;
-    }
-}
-
-const Token& TokenTaker::front() const
-{
-    if (*this) {
-        return m_tokens.front();
-    } else {
-        throw std::runtime_error("Attempt to peek into an empty TokenTaker");
-    }
-}
-
-const Token& TokenTaker::back() const
-{
-    if (*this) {
-        return m_tokens.back();
-    } else {
-        throw std::runtime_error("Attempt to peek into an empty TokenTaker");
-    }
-}
-
-bool TokenTaker::contains(Symbol s) const
-{
-    for (const auto& token : m_tokens) {
-        if (s == token.getSymbol()) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool TokenTaker::empty() const
-{
-    return m_tokens.empty();
-}
-
-TokenTaker::operator bool() const
-{
-    return !empty();
-}
-
-NameStack::NameStack()
-: m_prev(nullptr), m_size(0) {}
-
-NameStack::NameStack(NameStack& other)
-: m_prev(&other), m_size(0) {}
-
-bool NameStack::isNameInUse(const std::string& name) const
-{
-    return m_names.count(name);
-}
-
-bool NameStack::isNameDefined(const std::string& name) const
-{
-    if (m_names.count(name) || name == ignoreIdentifier) {
-        return true;
-    } else if (m_prev) {
-        return m_prev->isNameDefined(name);
-    } else {
-        return false;
-    }
-}
-
-NameStackDef NameStack::insert(const Token& token)
-{
-    return insertIndexed(token, 1);
-}
-
-NameStackDef NameStack::insertIndexed(const Token& token, size_t index)
-{
-    if (isNameInUse(token.getIdentifier())) {
-        std::stringstream s;
-        s << "Attempt to define already existing variable "
-          << token.getIdentifier();
-        token.throwError(s.str());
-    }
-    if (index == 0) {
-        std::stringstream s;
-        s << "Array can not have 0 size";
-        token.throwError(s.str());
-    }
-    NameStackDef def;
-    def.size = index;
-    if (token.getIdentifier() == ignoreIdentifier) {
-        def.pos = ignorePosition;
-    } else {
-        def.pos = size();
-        m_size += index;
-        m_names[token.getIdentifier()] = def;
-    }
-    return def;
-}
-
-NameStackDef NameStack::getPosition(const Token& token)
-{
-    if (token.getIdentifier() == ignoreIdentifier) {
-        NameStackDef def;
-        def.pos = ignorePosition;
-        def.size = 1;
-        return def;
-    }
-    if (!isNameDefined(token.getIdentifier())) {
-        std::stringstream s;
-        s << "Attempt to use undefined variable "
-          << token.getIdentifier();
-        token.throwError(s.str());
-    } else {
-        if (m_prev && m_names.count(token.getIdentifier()) == 0) {
-            return m_prev->getPosition(token);
-        } else {
-            return m_names[token.getIdentifier()];
-        }
-    }
-}
-
-NameStackDef NameStack::getPositionIndexed(const Token& token, size_t index)
-{
-    if (token.getIdentifier() == ignoreIdentifier) {
-        NameStackDef def;
-        def.pos = ignorePosition;
-        def.size = index;
-        return def;
-    }
-    if (!isNameDefined(token.getIdentifier())) {
-        std::stringstream s;
-        s << "Attempt to use undefined variable "
-          << token.getIdentifier();
-        token.throwError(s.str());
-    } else {
-        if (m_prev && m_names.count(token.getIdentifier()) == 0) {
-            return m_prev->getPosition(token);
-        } else {
-            if (m_prev && m_names.count(token.getIdentifier()) == 0) {
-                return m_prev->getPositionIndexed(token, index);
-            } else {
-                NameStackDef def = m_names[token.getIdentifier()];
-                if (index >= def.size) {
-                    std::stringstream s;
-                    s << "Index out of bounds ";
-                    token.throwError(s.str());
-                }
-                def.pos += index;
-                def.size = 1;
-                return def;
-            }
-        }
-    }
-}
-
-size_t NameStack::size()
-{
-    if (m_prev) {
-        return m_size + m_prev->size();
-    } else {
-        return m_size;
-    }
-}
-
 /// Makes sure that the given token has the given symbol.
 void assertToken(Token& token, Symbol expected)
 {
@@ -269,12 +71,15 @@ std::pair<TokenTaker, TokenTaker> splitAt(
 /// Take tokens from the token taker until the given symbol is met
 TokenTaker takeUntil(TokenTaker& tokens, Symbol at) {
     if (!tokens) {
-        throwErrorNoInfo("Expected symbols");
+        std::stringstream s;
+        s << "Expected " << at;
+        throwErrorNoInfo(s.str());
     }
     TokenTaker ret;
     while (tokens) {
         Token t = tokens.pop();
         if (!tokens && t.getSymbol() != at) {
+            // error if reaching end of tokens but haven't found symbol
             std::stringstream s;
             s << "Expected " << at << "; got " << t << " instead";
             t.throwError(s.str());
@@ -381,6 +186,51 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
         std::move(block)));
 }
 
+/// Parse a function expression
+ExpressionPtr parseExpressionFunction(
+    const Token& token_function, TokenTaker& tokens, NameStack& names)
+{
+    Token args = tokens.pop();
+    // its a function call, parse inside of parenthesis as parameters
+    TokenTaker param_taker(std::move(args.takeBlock()));
+    std::vector<ExpressionPtr> values;
+    splitMultiple(param_taker, Symbol::COMMA, false,
+    [&values, &names](auto tokens) {
+        assertNotEmpty(tokens, "expression before comma");
+        // expressions are comma delimited
+        values.push_back(parseExpression(tokens, names));
+        assertEmpty(tokens);
+    });
+    return std::make_unique<ExpressionFunction>(
+        token_function.getDebugInfo(), token_function.getIdentifier(),
+        std::move(values));
+}
+
+/// Parse an identifier expression
+ExpressionPtr parseExpressionIdentifier(
+    const Token& token_id, TokenTaker& tokens, NameStack& names)
+{
+    NameStackDef def;
+    if (tokens.peek() == Symbol::INDEX) {
+        Token tokenIndex = tokens.pop();
+        def = names.getPositionIndexed(token_id, tokenIndex.getIndex());
+    } else {
+        def = names.getPosition(token_id);
+    }
+    if (def.pos == ignorePosition) {
+        std::stringstream s;
+        s << "Attempt to get value of ignored variable";
+        token_id.throwError(s.str());
+    }
+    if (def.size == 1) {
+        return std::make_unique<ExpressionVariable>(
+            token_id.getDebugInfo(), def.pos);
+    } else {
+        return std::make_unique<ExpressionArray>(
+            token_id.getDebugInfo(), def.pos, def.size);
+    }
+}
+
 ExpressionPtr parseExpression(TokenTaker& tokens, NameStack& names)
 {
     auto first = tokens.peek();
@@ -395,44 +245,15 @@ ExpressionPtr parseExpression(TokenTaker& tokens, NameStack& names)
             throwError(t.getDebugInfo(), e.what());
         }
         left = parseExpression(left_taker, names);
+        assertEmpty(left_taker);
     } else if (first == Symbol::IDENTIFIER) {
         // an identifier is either a function call or a variable
         Token t = tokens.pop();
         auto next = tokens.peek();
         if (next == Symbol::PARENTHESIS) {
-            Token args = tokens.pop();
-            // its a function call, parse inside of parenthesis as parameters
-            TokenTaker param_taker(std::move(args.takeBlock()));
-            std::vector<ExpressionPtr> values;
-            splitMultiple(param_taker, Symbol::COMMA, false,
-            [&values, &names](auto tokens) {
-                assertNotEmpty(tokens, "expression before comma");
-                // expressions are comma delimited
-                values.push_back(parseExpression(tokens, names));
-                assertEmpty(tokens);
-            });
-            left = std::make_unique<ExpressionFunction>(
-                t.getDebugInfo(), t.getIdentifier(), std::move(values));
+            left = parseExpressionFunction(t, tokens, names);
         } else {
-            NameStackDef def;
-            if (next == Symbol::INDEX) {
-                Token tokenIndex = tokens.pop();
-                def = names.getPositionIndexed(t, tokenIndex.getIndex());
-            } else {
-                def = names.getPosition(t);
-            }
-            if (def.pos == ignorePosition) {
-                std::stringstream s;
-                s << "Attempt to get value of ignored variable";
-                t.throwError(s.str());
-            }
-            if (def.size == 1) {
-                left = std::make_unique<ExpressionVariable>(
-                    t.getDebugInfo(), def.pos);
-            } else {
-                left = std::make_unique<ExpressionArray>(
-                    t.getDebugInfo(), def.pos, def.size);
-            }
+            left = parseExpressionIdentifier(t, tokens, names);
         }
     } else if (first == Symbol::LITERAL) {
         // literal value
@@ -463,7 +284,8 @@ ExpressionPtr parseExpression(TokenTaker& tokens, NameStack& names)
     }
 }
 
-StatementPtr parseConditional(TokenTaker& tokens, NameStack& names)
+/// Parse a statement based on a condition, e.g. a while loop or if statement
+StatementPtr parseStatementConditional(TokenTaker& tokens, NameStack& names)
 {
     // if or while
     Token t = tokens.pop();
@@ -502,7 +324,8 @@ StatementPtr parseConditional(TokenTaker& tokens, NameStack& names)
     }
 }
 
-StatementPtr parseAssign(TokenTaker& tokens, NameStack& names)
+/// Parse a variable assignment or declaration statement
+StatementPtr parseStatementAssign(TokenTaker& tokens, NameStack& names)
 {
     // assignment
     bool is_var = false;

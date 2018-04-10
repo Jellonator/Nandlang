@@ -8,10 +8,12 @@ sources = [
     "expression.cpp",
     "function.cpp",
     "main.cpp",
+    "namestack.cpp",
     "parse.cpp",
     "state.cpp",
     "statement.cpp",
     "symbol.cpp",
+    "tokentaker.cpp",
 ]
 
 # Create program

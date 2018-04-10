@@ -1,4 +1,9 @@
 #include "symbol.h"
+#include <limits>
+
+const std::string ignoreIdentifier = "_";
+
+const size_t ignorePosition = std::numeric_limits<size_t>::max();
 
 const std::map<char, Symbol> symbolMap = {
     {',', Symbol::COMMA},

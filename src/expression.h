@@ -6,11 +6,6 @@
 #include <set>
 #include "debug.h"
 
-/// Special identifier used for ignoring parts of a function's output
-extern const std::string ignoreIdentifier;
-/// The variable position of an ignored variable
-extern const size_t ignorePosition;
-
 class State;
 
 /// An expression. An expression has inputs and outputs.

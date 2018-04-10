@@ -2,10 +2,6 @@
 #include "state.h"
 #include <algorithm>
 #include <sstream>
-#include <limits>
-
-const std::string ignoreIdentifier = "_";
-const size_t ignorePosition = std::numeric_limits<size_t>::max();
 
 size_t countOutputs(State& state,
     const std::vector<ExpressionPtr>& expressions)
