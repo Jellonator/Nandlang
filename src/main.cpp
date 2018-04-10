@@ -21,6 +21,7 @@ std::string replaceTabs(const std::string& str, size_t spaces)
     return ret;
 }
 
+/// handle the given error
 void handleError(const DebugError& e)
 {
     // Output error message
@@ -79,10 +80,21 @@ void run(std::istream& stream, const DebugInfo& info)
     }
 }
 
+const char* coolstuff =
+"!!  !!   !!    !!!    !!   !!  !!!!!    !!         !!!    !!   !!   !!!!!   !!\n"
+"!!  !!!  !!   !!!!!   !!!  !!  !!  !!   !!        !!!!!   !!!  !!  !!  !!!  !!\n"
+"!!  !!!! !!  !!   !!  !!!! !!  !!   !!  !!       !!   !!  !!!! !!  !!       !!\n"
+"!!  !!!!!!!  !!!!!!!  !!!!!!!  !!   !!  !!       !!!!!!!  !!!!!!!  !! !!!!  !!\n"
+"!!  !! !!!!  !!   !!  !! !!!!  !!   !!  !!       !!   !!  !! !!!!  !!   !!  !!\n"
+"    !!  !!!  !!   !!  !!  !!!  !!  !!   !!       !!   !!  !!  !!!  !!!!!!!    \n"
+"!!  !!   !!  !!   !!  !!   !!  !!!!!    !!!!!!!  !!   !!  !!   !!   !!! !!  !!\n"
+"An esoteric programming language based on NAND completeness";
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
-        std::cout << "Expected 1 argument." << std::endl;
+        std::cout << coolstuff << std::endl;
+        std::cout << "Usage:\nnandlang <path/to/script>" << std::endl;
     } else {
         std::ifstream file(argv[1]);
         if (!file.is_open()) {
