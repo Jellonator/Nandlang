@@ -140,9 +140,10 @@ NameStackDef NameStack::insertIndexed(const Token& token, size_t index)
 NameStackDef NameStack::getPosition(const Token& token)
 {
     if (token.getIdentifier() == ignoreIdentifier) {
-        std::stringstream s;
-        s << "Attempt to get value of ignored variable";
-        token.throwError(s.str());
+        NameStackDef def;
+        def.pos = ignorePosition;
+        def.size = 1;
+        return def;
     }
     if (!isNameDefined(token.getIdentifier())) {
         std::stringstream s;
@@ -161,9 +162,10 @@ NameStackDef NameStack::getPosition(const Token& token)
 NameStackDef NameStack::getPositionIndexed(const Token& token, size_t index)
 {
     if (token.getIdentifier() == ignoreIdentifier) {
-        std::stringstream s;
-        s << "Attempt to get value of ignored variable";
-        token.throwError(s.str());
+        NameStackDef def;
+        def.pos = ignorePosition;
+        def.size = index;
+        return def;
     }
     if (!isNameDefined(token.getIdentifier())) {
         std::stringstream s;
@@ -419,6 +421,11 @@ ExpressionPtr parseExpression(TokenTaker& tokens, NameStack& names)
             } else {
                 def = names.getPosition(t);
             }
+            if (def.pos == ignorePosition) {
+                std::stringstream s;
+                s << "Attempt to get value of ignored variable";
+                t.throwError(s.str());
+            }
             if (def.size == 1) {
                 left = std::make_unique<ExpressionVariable>(
                     t.getDebugInfo(), def.pos);
@@ -541,7 +548,11 @@ StatementPtr parseAssign(TokenTaker& tokens, NameStack& names)
             }
         }
         for (size_t i = 0; i < def.size; ++i) {
-            positions.push_back(def.pos + i);
+            size_t pos = def.pos;
+            if (pos != ignorePosition) {
+                pos += i;
+            }
+            positions.push_back(pos);
         }
         assertEmpty(tokens);
     });

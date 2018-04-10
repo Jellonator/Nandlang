@@ -3,4 +3,20 @@ function main() {
     putb(a);
     putb(b);
     endl();
+    var foo[8] = 0,0,0,1,0,0,0,0;
+    foo[0] = foo[3];
+    foo[1], _[6], foo[2] = foo;
+    var c, _[6], d = foo;
+    putb(foo[0]);
+    putb(foo[1]);
+    putb(foo[2]);
+    putb(foo[3]);
+    putb(foo[4]);
+    putb(foo[5]);
+    putb(foo[6]);
+    putb(foo[7]);
+    endl();
+    putb(c);
+    putb(d);
+    endl();
 }

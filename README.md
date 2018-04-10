@@ -53,10 +53,12 @@ programming language (which is odd since I've barely even touched it), I would
 recommend setting Javascript as your text editor's language when editing
 Nandlang script files.
 
-## Basic syntax
+## Syntax
 Like many programming languages, Nandlang borrows a lot of its syntax from C;
 however, there are still many differences. This section will go over the basic
 syntax of Nandlang.
+
+You can view the complete syntax definition [here](./bnf.md).
 
 ### Types
 In Nandlang, there exists only one type: the bit. A bit has a value of either 0,
@@ -240,6 +242,32 @@ function main() {
 }
 ```
 
+### Arrays
+An array in Nandlang can be declared using square brackets:
+
+```Javascript
+var foo[8] = 0,0,0,0,0,0,0,0;
+```
+
+Once you declare an array, you can assign to or retrieve individual elements of
+the array also by using square brackets:
+
+```Javascript
+foo[0] = foo[3];
+```
+
+Attempting to use an out of bounds index in an array is a compilation error:
+
+```Javascript
+foo[3] = foo[10];// cannot index foo[10], only has size of 8
+```
+
+You can also use the ignore character as an array to ignore multiple values:
+
+```Javascript
+foo[1], _[6], foo[2] = foo;
+```
+
 ## Standard library
 The Nandlang standard library defines many functions, mostly for I/O.
 
@@ -357,96 +385,77 @@ function add(a, b, cin : v, cout) {
 }
 
 // 8 bit adder
-function add8(
-    a1, a2, a3, a4, a5, a6, a7, a8,
-    b1, b2, b3, b4, b5, b6, b7, b8
-  : o1, o2, o3, o4, o5, o6, o7, o8) {
+function add8(a[8], b[8] : o[8]) {
     var c = 0;
-    o8, c = add(a8, b8, c);
-    o7, c = add(a7, b7, c);
-    o6, c = add(a6, b6, c);
-    o5, c = add(a5, b5, c);
-    o4, c = add(a4, b4, c);
-    o3, c = add(a3, b3, c);
-    o2, c = add(a2, b2, c);
-    o1, c = add(a1, b1, c);
+    o[7], c = add(a[7], b[7], c);
+    o[6], c = add(a[6], b[6], c);
+    o[5], c = add(a[5], b[5], c);
+    o[4], c = add(a[4], b[4], c);
+    o[3], c = add(a[3], b[3], c);
+    o[2], c = add(a[2], b[2], c);
+    o[1], c = add(a[1], b[1], c);
+    o[0], c = add(a[0], b[0], c);
 }
 
 // returns the two's complement of the given integer
-function complement8(
-    i1, i2, i3, i4, i5, i6, i7, i8
-  : o1, o2, o3, o4, o5, o6, o7, o8) {
-    o1, o2, o3, o4, o5, o6, o7, o8 = add8(
-    not(i1), not(i2), not(i3), not(i4), not(i5), not(i6), not(i7), not(i8),
-    0, 0, 0, 0, 0, 0, 0, 1);
+function complement8(i[8] : o[8]) {
+    o = add8(
+        not(i[0]), not(i[1]), not(i[2]), not(i[3]),
+        not(i[4]), not(i[5]), not(i[6]), not(i[7]),
+        0, 0, 0, 0, 0, 0, 0, 1);
 }
 
 // 8 bit subtraction
-function sub8(
-    a1, a2, a3, a4, a5, a6, a7, a8,
-    b1, b2, b3, b4, b5, b6, b7, b8
-  : o1, o2, o3, o4, o5, o6, o7, o8) {
-    o1, o2, o3, o4, o5, o6, o7, o8 = add8(
-    a1, a2, a3, a4, a5, a6, a7, a8,
-    complement8(b1, b2, b3, b4, b5, b6, b7, b8));
+function sub8(a[8], b[8] : o[8]) {
+    o = add8(a, complement8(b));
 }
 
 // 8 bit equality
-function equal8(
-    a1, a2, a3, a4, a5, a6, a7, a8,
-    b1, b2, b3, b4, b5, b6, b7, b8
-  : out) {
+function equal8(a[8], b[8] : out) {
     out = and(
-        and(and(eq(a1, b1), eq(a2, b2)), and(eq(a3, b3), eq(a4, b4))),
-        and(and(eq(a5, b5), eq(a6, b6)), and(eq(a7, b7), eq(a8, b8))));
+        and(and(eq(a[1], b[1]), eq(a[2], b[2])),
+            and(eq(a[3], b[3]), eq(a[4], b[4]))),
+        and(and(eq(a[5], b[5]), eq(a[6], b[6])),
+            and(eq(a[7], b[7]), eq(a[0], b[0]))));
 }
 
 // returns the Fibonacci number for the given input
-function fibonacci(
-    i1, i2, i3, i4, i5, i6, i7, i8
-  : o1, o2, o3, o4, o5, o6, o7, o8) {
-    var is_equal = equal8(i1, i2, i3, i4, i5, i6, i7, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+function fibonacci(i[8] : o[8]) {
+    var check[7], _ = i;
+    var is_equal = equal8(check,0, 0,0,0,0,0,0,0,0);
     if is_equal {
         // return input if equal to 1 or 0
-        o1 = i1;
-        o2 = i2;
-        o3 = i3;
-        o4 = i4;
-        o5 = i5;
-        o6 = i6;
-        o7 = i7;
-        o8 = i8;
+        o = i;
     }
     if not(is_equal) {
         // o = fibonacci(i - 1) + fibonacci(i - 2);
-        o1, o2, o3, o4, o5, o6, o7, o8 = add8(
-            fibonacci(sub8(i1, i2, i3, i4, i5, i6, i7, i8, 0, 0, 0, 0, 0, 0, 0, 1)),
-            fibonacci(sub8(i1, i2, i3, i4, i5, i6, i7, i8, 0, 0, 0, 0, 0, 0, 1, 0))
+        o = add8(
+            fibonacci(sub8(i, 0,0,0,0,0,0,0,1)),
+            fibonacci(sub8(i, 0,0,0,0,0,0,1,0))
         );
     }
 }
 
 function main()
 {
-    var v1, v2, v3, v4, v5, v6, v7, v8 = 0, 0, 0, 0, 0, 0, 0, 0;
-    while not(equal8(v1, v2, v3, v4, v5, v6, v7, v8, 0, 0, 0, 0, 1, 1, 1, 0)) {
+    var value[8] = 0,0,0,0,0,0,0,0;
+    while not(equal8(value, 0,0,0,0,1,1,1,0)) {
         // to output strings multiple individual putc calls are needed
         putc('F');
         putc('i');
         putc('b');
         putc(' ');
-        puti8(v1, v2, v3, v4, v5, v6, v7, v8);
+        puti8(value);
         putc(' ');
         putc('=');
         putc(' ');
-        puti8(fibonacci(v1, v2, v3, v4, v5, v6, v7, v8));
+        puti8(fibonacci(value));
         endl();
         // increment
-        v1, v2, v3, v4, v5, v6, v7, v8 = add8(
-            v1, v2, v3, v4, v5, v6, v7, v8, 0, 0, 0, 0, 0, 0, 0, 1);
+        value = add8(value, 0,0,0,0,0,0,0,1);
     }
 }
 ```
 
 ## Other examples
-More examples can be found in the "examples" subfolder.
+More examples can be found in the [examples subfolder](./example).

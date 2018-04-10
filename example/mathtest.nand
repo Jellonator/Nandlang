@@ -35,110 +35,101 @@ function add(a, b, cin : v, cout) {
 	cout = or(and(a, b), and(xor(a, b), cin));
 }
 
-// Adds together four bits.
-function add4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
-	var c = 0;
-	o4, c = add(a4, b4, c);
-	o3, c = add(a3, b3, c);
-	o2, c = add(a2, b2, c);
-	o1, c = add(a1, b1, c);
+// 8 bit adder
+function add8(a[8], b[8] : o[8]) {
+    var c = 0;
+    o[7], c = add(a[7], b[7], c);
+    o[6], c = add(a[6], b[6], c);
+    o[5], c = add(a[5], b[5], c);
+    o[4], c = add(a[4], b[4], c);
+    o[3], c = add(a[3], b[3], c);
+    o[2], c = add(a[2], b[2], c);
+    o[1], c = add(a[1], b[1], c);
+    o[0], c = add(a[0], b[0], c);
 }
 
-// Returns the complement of the given value.
-function complement4(v1, v2, v3, v4 : o1, o2, o3, o4) {
-	o1, o2, o3, o4 = increment4(not(v1), not(v2), not(v3), not(v4));
+// returns the two's complement of the given integer
+function complement8(i[8] : o[8]) {
+    o = add8(
+        not(i[0]), not(i[1]), not(i[2]), not(i[3]),
+        not(i[4]), not(i[5]), not(i[6]), not(i[7]),
+        0, 0, 0, 0, 0, 0, 0, 1);
 }
 
-// Subtracts B from A.
-function sub4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
-	o1, o2, o3, o4 = add4(a1, a2, a3, a4, complement4(b1, b2, b3, b4));
+// 8 bit subtraction
+function sub8(a[8], b[8] : o[8]) {
+    o = add8(a, complement8(b));
 }
 
-// Increments the given value by 1.
-function increment4(v1, v2, v3, v4 : o1, o2, o3, o4) {
-	o1, o2, o3, o4 = add4(v1, v2, v3, v4, 0, 0, 0, 1);
-}
-
-// Returns 1 if the two values A and B are equal.
-function eq4(a1, a2, a3, a4, b1, b2, b3, b4 : out) {
-	out = and(and(eq(a1, b1), eq(a2, b2)), and(eq(a3, b3), eq(a4, b4)));
+// 8 bit equality
+function eq8(a[8], b[8] : out) {
+    out = and(
+        and(and(eq(a[1], b[1]), eq(a[2], b[2])),
+            and(eq(a[3], b[3]), eq(a[4], b[4]))),
+        and(and(eq(a[5], b[5]), eq(a[6], b[6])),
+            and(eq(a[7], b[7]), eq(a[0], b[0]))));
 }
 
 // Returns 1 if A is greater than B.
-function gr4(a1, a2, a3, a4, b1, b2, b3, b4 : out) {
-	//out = ge(ge(ge(a1, b1), ge(a2, b2)), ge(ge(a3, b3), ge(a4, b4)));
-	out = or(
-		gr(a1, b1),
-		and(eq(a1, b1), or(
-			gr(a2, b2),
-			and(eq(a2, b2), or(
-				gr(a3, b3),
-				and(eq(a3, b3), gr(a4, b4))
-			))
-		)),
-	);
+function gr8(a[8], b[8] : out) {
+	// BEHOLD: the uggliest function ever written
+	out =
+		or(gr(a[0], b[0]), and(eq(a[0], b[0]),
+		or(gr(a[1], b[1]), and(eq(a[1], b[1]),
+		or(gr(a[2], b[2]), and(eq(a[2], b[2]),
+		or(gr(a[3], b[3]), and(eq(a[3], b[3]),
+		or(gr(a[4], b[4]), and(eq(a[4], b[4]),
+		or(gr(a[5], b[5]), and(eq(a[5], b[5]),
+		or(gr(a[6], b[6]), and(eq(a[6], b[6]),
+		   gr(a[7], b[7])))))))))))))));
 }
 
-function ge4(a1, a2, a3, a4, b1, b2, b3, b4 : out) {
-	//out = ge(ge(ge(a1, b1), ge(a2, b2)), ge(ge(a3, b3), ge(a4, b4)));
-	out = or(gr4(a1, a2, a3, a4, b1, b2, b3, b4), eq4(a1, a2, a3, a4, b1, b2, b3, b4));
+function ge8(a[8], b[8] : out) {
+	out = or(gr8(a, b), eq8(a, b));
 }
 
 // Divides A by B and returns the quotient.
-function divide4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
-	o1 = 0;
-	o2 = 0;
-	o3 = 0;
-	o4 = 0;
-	while ge4(a1, a2, a3, a4, b1, b2, b3, b4) {
-		o1, o2, o3, o4 = increment4(o1, o2, o3, o4);
-		a1, a2, a3, a4 = sub4(a1, a2, a3, a4, b1, b2, b3, b4);
+function divide8(a[8], b[8] : o[8]) {
+	o = 0,0,0,0,0,0,0,0;
+	while ge8(a, b) {
+		o = add8(o, 0,0,0,0,0,0,0,1);
+		a = sub8(a, b);
 	}
 }
 
 // Multiplies A and B and requrns the product.
-function multiply4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
+function multiply8(a[8], b[8] : o[8]) {
 	// outputs must be initialized first.
-	o1 = 0;
-	o2 = 0;
-	o3 = 0;
-	o4 = 0;
-	while not(eq4(b1, b2, b3, b4, 0, 0, 0, 0)) {
+	o = 0,0,0,0,0,0,0,0;
+	while not(eq8(b, 0,0,0,0,0,0,0,0)) {
 		// outputs can be re-assigned.
-		o1, o2, o3, o4 = add4(a1, a2, a3, a4, o1, o2, o3, o4);
-		b1, b2, b3, b4 = sub4(b1, b2, b3, b4, 0, 0, 0, 1);
+		o = add8(a, o);
+		b = sub8(b, 0,0,0,0,0,0,0,1);
 	}
 }
 
 // Returns the modulo of A and B.
-function mod4(a1, a2, a3, a4, b1, b2, b3, b4 : o1, o2, o3, o4) {
-	o1, o2, o3, o4 = sub4(a1, a2, a3, a4, multiply4(b1, b2, b3, b4, divide4(a1, a2, a3, a4, b1, b2, b3, b4)));
-}
-
-// Output a 4-bit integer
-function puti4(a, b, c, d) {
-	puti8(0, 0, 0, 0, a, b, c, d);
+function mod8(a[8], b[8] : o[8]) {
+	o = sub8(a, multiply8(b, divide8(a, b)));
 }
 
 function main() {
-	puti4(add4(0, 0, 1, 1, 0, 1, 0, 1));
+	puti8(add8(0,0,0,0,0,0,1,1, 0,0,0,0,0,1,0,1));
 	endl();
-	puti4(complement4(0, 0, 1, 1));
+	puti8(complement8(0,0,0,0,0,0,1,1));
 	endl();
-	puti4(sub4(1, 1, 0, 1, 0, 0, 1, 1));
+	puti8(sub8(0,0,0,0,1,1,0,1, 0,0,0,0,0,0,1,1));
 	endl();
-	puti4(multiply4(0, 0, 1, 1, 0, 1, 0, 1));
+	puti8(multiply8(0,0,0,0,0,0,1,1, 0,0,0,0,0,1,0,1));
 	endl();
-	puti4(divide4(1, 1, 1, 1, 0, 0, 1, 1));
+	puti8(divide8(0,0,0,0,1,1,1,1, 0,0,0,0,0,0,1,1));
 	endl();
-	puti4(divide4(1, 1, 1, 0, 0, 0, 1, 1));
+	puti8(divide8(0,0,0,0,1,1,1,0, 0,0,0,0,0,0,1,1));
 	endl();
-	puti4(divide4(1, 1, 1, 1, 0, 1, 0, 1));
+	puti8(divide8(0,0,0,0,1,1,1,1, 0,0,0,0,0,1,0,1));
 	endl();
-	puti4(divide4(1, 1, 1, 0, 0, 1, 0, 1));
+	puti8(divide8(0,0,0,0,1,1,1,0, 0,0,0,0,0,1,0,1));
 	endl();
-	puti4(mod4(1, 1, 0, 1, 0, 1, 0, 1));
-	endl();
-	putc('a');
+	puti8(mod8(0,0,0,0,1,1,0,1, 0,0,0,0,0,1,0,1));
 	endl();
 }

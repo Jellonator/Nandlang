@@ -26,7 +26,9 @@ void StatementAssign::resolve(State& state) const
     }
     for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); ++iter) {
         bool value = state.pop();
-        state.setVar(*iter, value);
+        if (*iter != ignorePosition) {
+            state.setVar(*iter, value);
+        }
     }
 }
 
