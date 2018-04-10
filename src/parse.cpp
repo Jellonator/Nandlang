@@ -106,7 +106,12 @@ void parseIndex(std::istream& stream, TokenBlock& block, DebugInfo& context)
         if (c == INDEX_END) {
             break;
         }
-        if (std::isdigit(c)) {
+        if (std::isspace(c)) {
+            if (c == '\n') {
+                context.line += 1;
+                context.column = 1;
+            }
+        } else if (std::isdigit(c)) {
             indexstring += c;
         } else  {
             std::stringstream s;
@@ -199,7 +204,12 @@ TokenBlock _parseTokens(std::istream& stream, DebugInfo& context, char endc)
         context.column += 1;
         context.position += 1;
         if (c == '/' && stream.peek() == '/') {
-            stream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            while (stream) {
+                context.position += 1;
+                if (stream.get() == '\n') {
+                    break;
+                }
+            }
             context.line += 1;
             // column set to 0 since it will be incremented later
             context.column = 1;

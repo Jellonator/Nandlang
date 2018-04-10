@@ -107,13 +107,13 @@ void ExpressionFunction::check(State& state) const
         s << "Call to non-existent function " << m_functionName;
         throwError(s.str());
     }
+    checkExpressions(state, m_arguments);
     Function& func = state.getFunction(m_functionName);
     if (func.getInputNum() != countOutputs(state, m_arguments)) {
         std::stringstream s;
         s << "Function expected different number of inputs.";
         throwError(s.str());
     }
-    checkExpressions(state, m_arguments);
     // Do NOT check func here because functions are already checked by State
 }
 
