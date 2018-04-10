@@ -192,7 +192,18 @@ function bar(: out1, out2) {}
 
 function main() {
     if foo() {} // foo does not have any outputs
-    if bar() {} // bar has too many outputss
+    if bar() {} // bar has too many outputs
+}
+```
+
+An if statement can also have an else block, which will execute if the given
+condition resolves to 0.
+
+```Javascript
+if condition {
+    // executes when condition is 1
+} else {
+    // executes when condition is 0
 }
 ```
 
@@ -267,6 +278,9 @@ You can also use the ignore character as an array to ignore multiple values:
 ```Javascript
 foo[1], _[6], foo[2] = foo;
 ```
+
+It should be noted that arrays in Nandlang are really just syntactic sugar.
+There is no difference between declaring `b[4]` and `b0, b1, b2, b3`.
 
 ## Standard library
 The Nandlang standard library defines many functions, mostly for I/O.
