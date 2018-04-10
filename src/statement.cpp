@@ -50,14 +50,18 @@ StatementVariable::StatementVariable(const DebugInfo& info,
 void StatementVariable::resolve(State& state) const
 {
     for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); ++iter) {
-        state.push(0);
+        if (*iter != ignorePosition) {
+            state.push(0);
+        }
     }
     for (const auto& expr : m_expressions) {
         expr->resolve(state);
     }
     for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); ++iter) {
         bool value = state.pop();
-        state.setVar(*iter, value);
+        if (*iter != ignorePosition) {
+            state.setVar(*iter, value);
+        }
     }
 }
 
@@ -72,7 +76,8 @@ void StatementVariable::check(State& state) const
 }
 
 StatementIf::StatementIf(const DebugInfo& info, ExpressionPtr cond,
-    std::vector<StatementPtr>&& block)
+    std::vector<StatementPtr>&& block,
+    std::vector<StatementPtr>&& elseblock)
 : Statement(info)
 , m_condition(std::move(cond))
 , m_block(std::move(block)) {}
@@ -85,6 +90,11 @@ void StatementIf::resolve(State& state) const
     if (state.pop()) {
         // call statements
         for (const auto& stmt : m_block) {
+            stmt->resolve(state);
+        }
+    } else {
+        // call else statements
+        for (const auto& stmt : m_else) {
             stmt->resolve(state);
         }
     }
@@ -100,6 +110,7 @@ void StatementIf::check(State& state) const
     }
     m_condition->check(state);
     checkStatements(state, m_block);
+    checkStatements(state, m_else);
 }
 
 StatementWhile::StatementWhile(const DebugInfo& info, ExpressionPtr cond,

@@ -30,10 +30,13 @@ void handleError(const DebugError& e)
     // Seek to the given position, then go one past the last newline
     // character, so that the entire line can be loaded.
     stream.seekg(e.getDebugInfo().position, std::ios_base::beg);
-    while (stream.tellg() > 0 && stream.peek() != '\n') {
+    while (stream.tellg() > 0) {
         stream.unget();
+        if (stream.peek() == '\n') {
+            stream.get();
+            break;
+        }
     }
-    stream.get();
     // read the line in question
     std::string line;
     std::getline(stream, line);
@@ -70,10 +73,11 @@ void run(std::istream& stream, const DebugInfo& info)
         state.getFunction("main").call(state);
     } catch (DebugError& e) {
         handleError(e);
-    } catch (std::exception& e) {
-        // generic, unknown error
-        std::cout << "Generic Error: " << e.what() << std::endl;
     }
+    // catch (std::exception& e) {
+    //     // generic, unknown error
+    //     std::cout << "Generic Error: " << e.what() << std::endl;
+    // }
 }
 
 int main(int argc, char **argv)

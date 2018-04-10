@@ -6,7 +6,7 @@ import os
 
 # Create environment
 env = Environment()
-env.MergeFlags(['-std=c++14', '-Wall', '-O2']);
+flags = ['-std=c++14', '-Wall']
 
 # Create --crosswin64 option
 AddOption('--crosswin64',
@@ -14,17 +14,32 @@ AddOption('--crosswin64',
           help='cross-compiles for windows',
           default=False)
 
+# Create --crosswin64 option
+AddOption('--gdb',
+          action='store_true',
+          help='enables GDB debugging symbols',
+          default=False)
+
 # Determine compilation options
 target = None;
-vardir = None
+vardir = 'build'
+
+if GetOption('gdb'):
+    flags.append('-ggdb')
+    vardir += '/debug'
+else:
+    flags.append('-O2')
+    vardir += '/release'
+
 if GetOption('crosswin64'):
     env['CXX'] = 'x86_64-w64-mingw32-g++'
-    target = '../../nandlang.exe'
-    vardir = 'build/win64'
+    target = '../../../nandlang.exe'
+    vardir += '/win64'
 else:
-    env['CXX']='g++'
-    target = '../../nandlang'
-    vardir = 'build/linux'
+    target = '../../../nandlang'
+    vardir += '/linux'
+
+env.MergeFlags(flags);
 print(target);
 
 # highlighting in terminal

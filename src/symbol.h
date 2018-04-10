@@ -9,8 +9,8 @@
 
 /// Represents a particular symbol type.
 enum class Symbol {
-    LITERAL, COMMA, BLOCK, IOSEP, PARENTHESIS, IDENTIFIER,
-    ASSIGN, FUNCTION, WHILE, IF, VAR, LINESEP, NAND, NONE
+    LITERAL, COMMA, BLOCK, IOSEP, PARENTHESIS, IDENTIFIER, ASSIGN, 
+    FUNCTION, WHILE, IF, VAR, LINESEP, NAND, INDEX, ELSE, NONE
 };
 
 /// Maps single character symbols to Symbol values
@@ -34,23 +34,27 @@ class Token : public Debuggable {
     std::string m_identifier; // for Identifier symbols
     bool m_value;             // for Literal symbols
     TokenBlock m_block;       // Used for enclosing symbols, e.g. braces
+    size_t m_index;           // Used for index symbol
 public:
     Token(Symbol, const DebugInfo&);
     Token(Symbol, bool, const DebugInfo&);
     Token(Symbol, std::string, const DebugInfo&);
     Token(Symbol, TokenBlock, const DebugInfo&);
+    Token(Symbol, size_t, const DebugInfo&);
     /// Get the symbol
     Symbol getSymbol() const;
     /// Get this token's identifier
     const std::string& getIdentifier() const;
     /// Get this token's literal value.
     bool getValue() const;
+    /// Get index
+    size_t getIndex() const;
     /// Get this token's block
     const TokenBlock& getBlock() const;
     /// Get a mutable reference to the token block
     TokenBlock takeBlock();
     /// Set identifier
-    void setIdentifier(std::string);
+    void setIdentifier(const std::string&);
     /// Set literal value
     void setValue(bool);
 };

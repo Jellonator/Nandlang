@@ -8,6 +8,8 @@
 const char UNDERSCORE = '_';
 const char SQUOTE = '\'';
 const char ESCAPE = '\\';
+const char INDEX_BEGIN = '[';
+const char INDEX_END = ']';
 
 /// Maps character escape codes to their representations
 const std::map<char, char> ESCAPE_LOOKUP = {
@@ -92,13 +94,52 @@ void appendIdentifier(TokenBlock& block, std::string& id, DebugInfo info)
     id = "";
 }
 
+/// parse an index, e.g. [4]
+void parseIndex(std::istream& stream, TokenBlock& block, DebugInfo& context)
+{
+    char c;
+    std::string indexstring;
+    const DebugInfo info = context;
+    while (stream.get(c)) {
+        if (c == INDEX_END) {
+            break;
+        }
+        if (std::isdigit(c)) {
+            indexstring += c;
+        } else  {
+            std::stringstream s;
+            s << "Unexpected character ";
+            if (std::isprint(c)) {
+                s << c;
+            } else {
+                s << "0x" << std::hex << std::setw(2)
+                  << std::setfill('0') << std::uppercase << int(c);
+            }
+            s << " in index";
+            throwError(info, s.str());
+        }
+        context.column += 1;
+        context.position += 1;
+    }
+    size_t index;
+    std::stringstream indexstream(indexstring);
+    indexstream >> index;
+    if (!indexstream.eof() || indexstream.bad()) {
+        std::stringstream s;
+        s << "Invalid index " << indexstring;
+        throwError(info, s.str());
+    }
+    block.push_back(Token(Symbol::INDEX, index, info));
+}
+
 /// parse a character literal, e.g. 'a', from the given stream.
 void parseChar(std::istream& stream, TokenBlock& block, DebugInfo& context)
 {
     char c;
     std::string charstring;
-    const DebugInfo info = context;
+    DebugInfo info = context;
     while (stream.get(c)) {
+        info = context;
         context.column += 1;
         context.position += 1;
         if (c == SQUOTE) {
@@ -168,6 +209,9 @@ TokenBlock _parseTokens(std::istream& stream, DebugInfo& context, char endc)
         } else if (c == SQUOTE) {
             appendIdentifier(block, identifier, id_info);
             parseChar(stream, block, context);
+        } else if (c == INDEX_BEGIN) {
+            appendIdentifier(block, identifier, id_info);
+            parseIndex(stream, block, context);
         } else if (std::isspace(c)) {
             appendIdentifier(block, identifier, id_info);
             if (c == '\n') {
@@ -183,11 +227,6 @@ TokenBlock _parseTokens(std::istream& stream, DebugInfo& context, char endc)
                 char ending = symbolBlocks.at(symbol);
                 TokenBlock inner = _parseTokens(stream, context, ending);
                 block.push_back(Token(symbol, inner, info));
-                if (symbol == Symbol::BLOCK) {
-                    // Line separators are implicitly inserted after all blocks.
-                    // This is important for while loops and if statements.
-                    block.push_back(Token(Symbol::LINESEP, info));
-                }
             } else {
                 block.push_back(Token(symbol, info));
             }

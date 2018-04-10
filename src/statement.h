@@ -51,8 +51,11 @@ public:
 class StatementIf : public Statement {
     ExpressionPtr m_condition;
     std::vector<StatementPtr> m_block;
+    std::vector<StatementPtr> m_else;
 public:
-    StatementIf(const DebugInfo&, ExpressionPtr, std::vector<StatementPtr>&&);
+    StatementIf(const DebugInfo&, ExpressionPtr,
+        std::vector<StatementPtr>&& block,
+        std::vector<StatementPtr>&& elseblock);
     void resolve(State& state) const override;
     void check(State&) const override;
 };
