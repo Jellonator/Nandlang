@@ -32,13 +32,15 @@ public:
     operator bool() const;
 };
 
+struct NameStackDef {
+    size_t pos;
+    size_t size;
+};
+
 class NameStack {
     NameStack *m_prev;
-    std::map<std::string, size_t> m_names;
-    /// Insert a variable and return its index
-    size_t insert(const std::string&);
-    /// Get the position of the given variable
-    size_t getPosition(const std::string& pos);
+    std::map<std::string, NameStackDef> m_names;
+    size_t m_size;
 public:
     NameStack();
     NameStack(NameStack&);
@@ -48,9 +50,11 @@ public:
     bool isNameDefined(const std::string&) const;
     /// Insert a token's identifier and return its index
     /// Will check to make sure the given name is not already defined
-    size_t insertToken(const Token&);
+    NameStackDef insert(const Token& token);
+    NameStackDef insertIndexed(const Token& token, size_t index);
     /// Get the position of the given variable
-    size_t getPositionToken(const Token& pos);
+    NameStackDef getPosition(const Token& token);
+    NameStackDef getPositionIndexed(const Token& token, size_t index);
     /// Get the number of elements in this specific NameStack (not parents)
     size_t size();
 };

@@ -101,6 +101,8 @@ void parseIndex(std::istream& stream, TokenBlock& block, DebugInfo& context)
     std::string indexstring;
     const DebugInfo info = context;
     while (stream.get(c)) {
+        context.column += 1;
+        context.position += 1;
         if (c == INDEX_END) {
             break;
         }
@@ -118,8 +120,6 @@ void parseIndex(std::istream& stream, TokenBlock& block, DebugInfo& context)
             s << " in index";
             throwError(info, s.str());
         }
-        context.column += 1;
-        context.position += 1;
     }
     size_t index;
     std::stringstream indexstream(indexstring);

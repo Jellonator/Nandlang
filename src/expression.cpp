@@ -141,6 +141,32 @@ uint64_t ExpressionVariable::getOutputNum(State& state) const
     return 1;
 }
 
+ExpressionArray::ExpressionArray(
+    const DebugInfo& info, size_t pos, size_t size)
+: Expression(info), m_pos(pos), m_size(size) {}
+
+void ExpressionArray::check(State& state) const
+{
+    // nothing to do
+}
+
+void ExpressionArray::resolve(State& state) const
+{
+    for (size_t i = 0; i < m_size; ++i) {
+        state.push(state.getVar(m_pos + i));
+    }
+}
+
+uint64_t ExpressionArray::getInputNum(State& state) const
+{
+    return 0;
+}
+
+uint64_t ExpressionArray::getOutputNum(State& state) const
+{
+    return m_size;
+}
+
 ExpressionLiteral::ExpressionLiteral(const DebugInfo& info, bool value)
 : Expression(info), m_value(value) {}
 

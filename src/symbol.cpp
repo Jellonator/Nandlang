@@ -24,7 +24,7 @@ const std::map<Symbol, char> symbolBlocks = {
 };
 
 Token::Token(Symbol symbol, const DebugInfo& info)
-: Debuggable(info), m_symbol(symbol) {}
+: Debuggable(info), m_symbol(symbol), m_value(false), m_index(0) {}
 
 Token::Token(Symbol symbol, bool value, const DebugInfo& info)
 : Token(symbol, info)

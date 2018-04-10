@@ -73,11 +73,10 @@ void run(std::istream& stream, const DebugInfo& info)
         state.getFunction("main").call(state);
     } catch (DebugError& e) {
         handleError(e);
+    } catch (std::exception& e) {
+        // generic, unknown error
+        std::cout << "Error: " << e.what() << std::endl;
     }
-    // catch (std::exception& e) {
-    //     // generic, unknown error
-    //     std::cout << "Generic Error: " << e.what() << std::endl;
-    // }
 }
 
 int main(int argc, char **argv)

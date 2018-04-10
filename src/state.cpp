@@ -115,13 +115,11 @@ size_t State::setVarOffset(size_t pos)
 
 void State::setVar(size_t pos, bool value)
 {
-    // std::cout << "SET " << pos << " = " << value << std::endl;
     m_stack.at(m_varOffset + pos) = value;
 }
 
 bool State::getVar(size_t pos) const
 {
-    // std::cout << "GET " << pos << " = " << m_stack.at(m_varOffset + pos) << std::endl;
     return m_stack.at(m_varOffset + pos);
 }
 

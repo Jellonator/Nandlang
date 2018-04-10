@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <stdexcept>
 
 /// Contains debugging information
 class DebugInfo {
@@ -20,11 +21,11 @@ public:
 std::ostream& operator<<(std::ostream&, const DebugInfo&);
 
 /// Throw an error for the given debugging info object and the given description
-void throwError(const DebugInfo& info, const std::string& what);
+[[noreturn]] void throwError(const DebugInfo& info, const std::string& what);
 /// Throw an error that will have debug information tacked on later. This is
 /// useful for errors that occur from a lack of proper Tokens, where a token
 /// does not exist that can provide useful information.
-void throwErrorNoInfo(const std::string& what);
+[[noreturn]] void throwErrorNoInfo(const std::string& what);
 
 /// Represents a class that contains debugging information.
 class Debuggable {
@@ -33,7 +34,7 @@ public:
     Debuggable();
     Debuggable(const DebugInfo&);
     /// Throw an exception with the given description
-    void throwError(const std::string& what) const;
+    [[noreturn]] void throwError(const std::string& what) const;
     /// Get this object's debug info
     DebugInfo getDebugInfo() const;
     /// Set the debug info
@@ -41,20 +42,20 @@ public:
 };
 
 /// An error that contains debug information
-class DebugError : public Debuggable {
+class DebugError : public Debuggable, public std::exception {
     std::string m_err;
 public:
     DebugError(const DebugInfo&, const std::string&);
     /// Error message
-    const std::string& what() const;
+    const char* what() const noexcept;
 };
 
 /// An error that does not contain any locational information
 /// Should be caught and given info later
-class InfolessError {
+class InfolessError : public std::exception {
     std::string m_err;
 public:
     InfolessError(const std::string&);
     /// Error message
-    const std::string& what() const;
+    const char* what() const noexcept;
 };

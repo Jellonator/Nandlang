@@ -80,7 +80,8 @@ StatementIf::StatementIf(const DebugInfo& info, ExpressionPtr cond,
     std::vector<StatementPtr>&& elseblock)
 : Statement(info)
 , m_condition(std::move(cond))
-, m_block(std::move(block)) {}
+, m_block(std::move(block))
+, m_else(std::move(elseblock)) {}
 
 void StatementIf::resolve(State& state) const
 {

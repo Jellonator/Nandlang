@@ -1,6 +1,5 @@
 #include "debug.h"
 #include <sstream>
-#include <stdexcept>
 
 DebugInfo::DebugInfo()
 : line(0), column(0), position(0), filename(nullptr) {}
@@ -21,9 +20,9 @@ std::ostream& operator<<(std::ostream& stream, const DebugInfo& info)
 InfolessError::InfolessError(const std::string& what)
 : m_err(what) {}
 
-const std::string& InfolessError::what() const
+const char* InfolessError::what() const noexcept
 {
-    return m_err;
+    return m_err.c_str();
 }
 
 void throwError(const DebugInfo& info, const std::string& what)
@@ -64,7 +63,7 @@ DebugError::DebugError(const DebugInfo& info, const std::string& what)
     m_err = s.str();
 }
 
-const std::string& DebugError::what() const
+const char* DebugError::what() const noexcept
 {
-    return m_err;
+    return m_err.c_str();
 }

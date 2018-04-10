@@ -4,7 +4,13 @@
 #include <sstream>
 #include <functional>
 
-void foobar(State&) {}
+/// Generates a unique name for the given identifier and index combo
+std::string generateNameIndexed(const std::string& name, size_t index)
+{
+    std::stringstream s;
+    s << name << ":" << index;
+    return s.str();
+}
 
 TokenTaker::TokenTaker(TokenBlock&& block)
 : m_tokens(block) {}
@@ -80,10 +86,10 @@ TokenTaker::operator bool() const
 }
 
 NameStack::NameStack()
-: m_prev(nullptr) {}
+: m_prev(nullptr), m_size(0) {}
 
 NameStack::NameStack(NameStack& other)
-: m_prev(&other) {}
+: m_prev(&other), m_size(0) {}
 
 bool NameStack::isNameInUse(const std::string& name) const
 {
@@ -101,62 +107,96 @@ bool NameStack::isNameDefined(const std::string& name) const
     }
 }
 
-size_t NameStack::insert(const std::string& name)
+NameStackDef NameStack::insert(const Token& token)
 {
-    if (name == ignoreIdentifier) {
-        return ignorePosition;
-    }
-    size_t ret = m_names.size();
-    m_names[name] = ret;
-    return ret;
+    return insertIndexed(token, 1);
 }
 
-size_t NameStack::insertToken(const Token& token)
+NameStackDef NameStack::insertIndexed(const Token& token, size_t index)
 {
     if (isNameInUse(token.getIdentifier())) {
         std::stringstream s;
         s << "Attempt to define already existing variable "
           << token.getIdentifier();
         token.throwError(s.str());
-        return 0;
     }
-    return insert(token.getIdentifier());
+    if (index == 0) {
+        std::stringstream s;
+        s << "Array can not have 0 size";
+        token.throwError(s.str());
+    }
+    NameStackDef def;
+    def.size = index;
+    if (token.getIdentifier() == ignoreIdentifier) {
+        def.pos = ignorePosition;
+    } else {
+        def.pos = size();
+        m_size += index;
+        m_names[token.getIdentifier()] = def;
+    }
+    return def;
 }
 
-size_t NameStack::getPosition(const std::string& pos)
-{
-    if (m_prev && m_names.count(pos) == 0) {
-        return m_prev->getPosition(pos);
-    }
-    return m_names.at(pos);
-}
-
-size_t NameStack::getPositionToken(const Token& token)
+NameStackDef NameStack::getPosition(const Token& token)
 {
     if (token.getIdentifier() == ignoreIdentifier) {
         std::stringstream s;
         s << "Attempt to get value of ignored variable";
         token.throwError(s.str());
-        return 0;
     }
     if (!isNameDefined(token.getIdentifier())) {
         std::stringstream s;
         s << "Attempt to use undefined variable "
           << token.getIdentifier();
         token.throwError(s.str());
-        return 0;
     } else {
-        return getPosition(token.getIdentifier());
+        if (m_prev && m_names.count(token.getIdentifier()) == 0) {
+            return m_prev->getPosition(token);
+        } else {
+            return m_names[token.getIdentifier()];
+        }
+    }
+}
+
+NameStackDef NameStack::getPositionIndexed(const Token& token, size_t index)
+{
+    if (token.getIdentifier() == ignoreIdentifier) {
+        std::stringstream s;
+        s << "Attempt to get value of ignored variable";
+        token.throwError(s.str());
+    }
+    if (!isNameDefined(token.getIdentifier())) {
+        std::stringstream s;
+        s << "Attempt to use undefined variable "
+          << token.getIdentifier();
+        token.throwError(s.str());
+    } else {
+        if (m_prev && m_names.count(token.getIdentifier()) == 0) {
+            return m_prev->getPosition(token);
+        } else {
+            if (m_prev && m_names.count(token.getIdentifier()) == 0) {
+                return m_prev->getPositionIndexed(token, index);
+            } else {
+                NameStackDef def = m_names[token.getIdentifier()];
+                if (index >= def.size) {
+                    std::stringstream s;
+                    s << "Index out of bounds ";
+                    token.throwError(s.str());
+                }
+                def.pos += index;
+                def.size = 1;
+                return def;
+            }
+        }
     }
 }
 
 size_t NameStack::size()
 {
-    size_t ret = m_names.size();
     if (m_prev) {
-        return ret + m_prev->size();
+        return m_size + m_prev->size();
     } else {
-        return ret;
+        return m_size;
     }
 }
 
@@ -307,8 +347,13 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
         assertNotEmpty(tokens, "identifier");
         Token t = tokens.pop();
         assertToken(t, Symbol::IDENTIFIER);
+        if (tokens.peek() == Symbol::INDEX) {
+            Token tokenIndex = tokens.pop();
+            names.insertIndexed(t, tokenIndex.getIndex());
+        } else {
+            names.insert(t);
+        }
         assertEmpty(tokens);
-        names.insertToken(t);
     });
     size_t num_inputs = names.size();
     splitMultiple(otaker, Symbol::COMMA, false, [&names](auto tokens) {
@@ -316,8 +361,13 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
         assertNotEmpty(tokens, "identifier");
         Token t = tokens.pop();
         assertToken(t, Symbol::IDENTIFIER);
+        if (tokens.peek() == Symbol::INDEX) {
+            Token tokenIndex = tokens.pop();
+            names.insertIndexed(t, tokenIndex.getIndex());
+        } else {
+            names.insert(t);
+        }
         assertEmpty(tokens);
-        names.insertToken(t);
     });
     size_t num_outputs = names.size() - num_inputs;
     // parse statements
@@ -362,9 +412,20 @@ ExpressionPtr parseExpression(TokenTaker& tokens, NameStack& names)
             left = std::make_unique<ExpressionFunction>(
                 t.getDebugInfo(), t.getIdentifier(), std::move(values));
         } else {
-            // its a variable
-            left = std::make_unique<ExpressionVariable>(
-                t.getDebugInfo(), names.getPositionToken(t));
+            NameStackDef def;
+            if (next == Symbol::INDEX) {
+                Token tokenIndex = tokens.pop();
+                def = names.getPositionIndexed(t, tokenIndex.getIndex());
+            } else {
+                def = names.getPosition(t);
+            }
+            if (def.size == 1) {
+                left = std::make_unique<ExpressionVariable>(
+                    t.getDebugInfo(), def.pos);
+            } else {
+                left = std::make_unique<ExpressionArray>(
+                    t.getDebugInfo(), def.pos, def.size);
+            }
         }
     } else if (first == Symbol::LITERAL) {
         // literal value
@@ -423,9 +484,10 @@ StatementPtr parseConditional(TokenTaker& tokens, NameStack& names)
             tokens.pop();
             Token else_token = tokens.pop();
             assertToken(else_token, Symbol::BLOCK);
-            TokenTaker elseblocktaker(std::move(token_block.takeBlock()));
+            TokenTaker elseblocktaker(std::move(else_token.takeBlock()));
             NameStack elsesubnames(names);
             elseblock = parseBlock(elseblocktaker, elsesubnames);
+            assertEmpty(elseblocktaker);
         }
         return std::make_unique<StatementIf>(
             t.getDebugInfo(), std::move(expr),
@@ -455,14 +517,33 @@ StatementPtr parseAssign(TokenTaker& tokens, NameStack& names)
         assertNotEmpty(tokens, "identifier before comma");
         Token t = tokens.pop();
         assertToken(t, Symbol::IDENTIFIER);
-        assertEmpty(tokens);
+        NameStackDef def;
+        bool is_indexed = false;
+        size_t index;
+        if (tokens.peek() == Symbol::INDEX) {
+            Token tokenIndex = tokens.pop();
+            index = tokenIndex.getIndex();
+            is_indexed = true;
+        }
         if (is_var) {
             // if is a var, should create name
-            positions.push_back(names.insertToken(t));
+            if (is_indexed) {
+                def = names.insertIndexed(t, index);
+            } else {
+                def = names.insert(t);
+            }
         } else {
             // if not a var, then it should already be defined
-            positions.push_back(names.getPositionToken(t));
+            if (is_indexed) {
+                def = names.getPositionIndexed(t, index);
+            } else {
+                def = names.getPosition(t);
+            }
         }
+        for (size_t i = 0; i < def.size; ++i) {
+            positions.push_back(def.pos + i);
+        }
+        assertEmpty(tokens);
     });
     splitMultiple(valuetaker, Symbol::COMMA, false,
         [&values, &names](auto tokens) {

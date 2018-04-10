@@ -70,7 +70,19 @@ public:
 class ExpressionVariable : public Expression {
     size_t m_pos;
 public:
-    ExpressionVariable(const DebugInfo&, size_t);
+    ExpressionVariable(const DebugInfo&, size_t pos);
+    void resolve(State&) const override;
+    uint64_t getInputNum(State&) const override;
+    uint64_t getOutputNum(State&) const override;
+    void check(State&) const override;
+};
+
+/// A variable expression. Represents a variable
+class ExpressionArray : public Expression {
+    size_t m_pos;
+    size_t m_size;
+public:
+    ExpressionArray(const DebugInfo&, size_t pos, size_t size);
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;
     uint64_t getOutputNum(State&) const override;
