@@ -401,11 +401,11 @@ StatementPtr parseStatement(TokenTaker& tokens, NameStack& names)
     auto first = tokens.peek();
     if (first == Symbol::WHILE || first == Symbol::IF) {
         // only if and while do not require semicolons
-        return parseConditional(tokens, names);
+        return parseStatementConditional(tokens, names);
     } else {
         TokenTaker subtokens = takeUntil(tokens, Symbol::LINESEP);
         if (subtokens.contains(Symbol::ASSIGN)) {
-            return parseAssign(subtokens, names);
+            return parseStatementAssign(subtokens, names);
         } else {
             // this is probably an expression. An error will result if it is not.
             auto expr = parseExpression(subtokens, names);

@@ -49,6 +49,8 @@ uint64_t ExpressionNand::getOutputNum(State& state) const
 
 void ExpressionNand::check(State& state) const
 {
+    m_left->check(state);
+    m_right->check(state);
     if (m_left->getOutputNum(state) != 1) {
         std::stringstream s;
         s << "Left operand to NAND operator should have 1 output.";
@@ -59,28 +61,27 @@ void ExpressionNand::check(State& state) const
         s << "Right operand to NAND operator should have 1 output.";
         throwError(s.str());
     }
-    m_left->check(state);
-    m_right->check(state);
 }
 
 ExpressionFunction::ExpressionFunction(
     const DebugInfo& info, const std::string& name,
     std::vector<ExpressionPtr>&& args)
-: Expression(info), m_functionName(name), m_arguments(std::move(args)) {}
+: Expression(info), m_functionName(name),
+m_arguments(std::move(args)), m_function(nullptr) {}
 
 void ExpressionFunction::resolve(State& state) const
 {
-    Function& func = state.getFunction(m_functionName);
+    // Function& func = state.getFunction(m_functionName);
     for (auto iter = m_arguments.begin(); iter != m_arguments.end(); iter ++) {
         // push in forward order
         (*iter)->resolve(state);
     }
-    func.call(state);
+    m_function->call(state);
 }
 
 uint64_t ExpressionFunction::getInputNum(State& state) const
 {
-    if (!state.hasFunction(m_functionName)) {
+    if (m_function == nullptr) {
         return 0;
     }
     Function& func = state.getFunction(m_functionName);
@@ -89,7 +90,7 @@ uint64_t ExpressionFunction::getInputNum(State& state) const
 
 uint64_t ExpressionFunction::getOutputNum(State& state) const
 {
-    if (!state.hasFunction(m_functionName)) {
+    if (m_function == nullptr) {
         return 0;
     }
     Function& func = state.getFunction(m_functionName);
@@ -104,8 +105,8 @@ void ExpressionFunction::check(State& state) const
         throwError(s.str());
     }
     checkExpressions(state, m_arguments);
-    Function& func = state.getFunction(m_functionName);
-    if (func.getInputNum() != countOutputs(state, m_arguments)) {
+    m_function = &state.getFunction(m_functionName);
+    if (m_function->getInputNum() != countOutputs(state, m_arguments)) {
         std::stringstream s;
         s << "Function expected different number of inputs.";
         throwError(s.str());

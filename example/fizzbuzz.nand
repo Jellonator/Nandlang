@@ -31,8 +31,11 @@ function xor(a, b : out) {
 
 // Full adder. Outputs value as V and carry as C.
 function add(a, b, cin : v, cout) {
-	v = xor(cin, xor(a, b));
-	cout = or(and(a, b), and(xor(a, b), cin));
+	var nab = a ! b;
+	v = (a ! nab) ! (b ! nab);
+	var nvc = v ! cin;
+	cout = nvc ! nab;
+	v = (v ! nvc) ! (cin ! nvc);
 }
 
 // 8 bit adder
@@ -88,29 +91,13 @@ function ge8(a[8], b[8] : out) {
 	out = or(gr8(a, b), eq8(a, b));
 }
 
-// Divides A by B and returns the quotient.
-function divide8(a[8], b[8] : o[8]) {
-	o = 0,0,0,0,0,0,0,0;
-	while ge8(a, b) {
-		o = add8(o, 0,0,0,0,0,0,0,1);
-		a = sub8(a, b);
-	}
-}
-
-// Multiplies A and B and requrns the product.
-function multiply8(a[8], b[8] : o[8]) {
-	// outputs must be initialized first.
-	o = 0,0,0,0,0,0,0,0;
-	while not(eq8(b, 0,0,0,0,0,0,0,0)) {
-		// outputs can be re-assigned.
-		o = add8(a, o);
-		b = sub8(b, 0,0,0,0,0,0,0,1);
-	}
-}
-
 // Returns the modulo of A and B.
 function mod8(a[8], b[8] : o[8]) {
-	o = sub8(a, multiply8(b, divide8(a, b)));
+	o = complement8(b);
+	while ge8(a, b) {
+		a = add8(a, o);
+	}
+	o = a;
 }
 
 // Fizzbuzz
@@ -133,7 +120,7 @@ function fizzbuzz(v[8]) {
 		puti8(v);
 	}
 	endl();
-	if not(ge8(v, 1,1,1,1,1,1,1,1)) {
+	if not(eq8(v, 1,1,1,1,1,1,1,1)) {
 		// Can use recursion.
 		fizzbuzz(add8(v, 0,0,0,0,0,0,0,1));
 	}
@@ -141,5 +128,5 @@ function fizzbuzz(v[8]) {
 
 // Entry point.
 function main() {
-	fizzbuzz(0,0,0,0,0,0,0,1);
+	fizzbuzz(0,0,0,0,0,0,0,0);
 }

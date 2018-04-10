@@ -106,12 +106,12 @@ void StatementIf::resolve(State& state) const
 
 void StatementIf::check(State& state) const
 {
+    m_condition->check(state);
     if (m_condition->getOutputNum(state) != 1) {
         std::stringstream s;
         s << "If statement expects only 1 input.";
         throwError(s.str());
     }
-    m_condition->check(state);
     checkStatements(state, m_block);
     checkStatements(state, m_else);
 }
@@ -141,12 +141,12 @@ void StatementWhile::resolve(State& state) const
 
 void StatementWhile::check(State& state) const
 {
+    m_condition->check(state);
     if (m_condition->getOutputNum(state) != 1) {
         std::stringstream s;
         s << "While statement expects only 1 input.";
         throwError(s.str());
     }
-    m_condition->check(state);
     checkStatements(state, m_block);
 }
 
@@ -162,10 +162,10 @@ void StatementExpression::resolve(State& state) const
 
 void StatementExpression::check(State& state) const
 {
+    m_expression->check(state);
     if (m_expression->getOutputNum(state) > 0) {
         std::stringstream s;
         s << "Unhandled outputs from expression.";
         throwError(s.str());
     }
-    m_expression->check(state);
 }

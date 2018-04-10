@@ -7,6 +7,7 @@
 #include "debug.h"
 
 class State;
+class Function;
 
 /// An expression. An expression has inputs and outputs.
 class Expression : public Debuggable {
@@ -52,6 +53,9 @@ public:
 class ExpressionFunction : public Expression {
     std::string m_functionName;
     std::vector<ExpressionPtr> m_arguments;
+    // mutable is fine here since this is just a cache so the function doesn't
+    // have to be looked up every time
+    mutable Function *m_function;
 public:
     ExpressionFunction(const DebugInfo&, const std::string&,
         std::vector<ExpressionPtr>&&);
