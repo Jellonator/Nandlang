@@ -6,8 +6,9 @@ A programming language based on NAND completeness.
 Created by James Beedie
 
 ## About
-Do you hate modern programming languages? All pretentious with their "zero cost
-abstractions", "RAII principles", and "object oriented programming"? Do you
+Do you hate modern programming languages? All pretentious with fancy mumbo
+jumbo such as "zero cost abstractions", "RAII principles", and
+"object oriented programming"? What the heck does that stuff even mean? Do you
 wish that there was a language that so simple, it only had one type and just a
 few operators? Well, look no further, because Nandlang is the perfect choice
 for you!
