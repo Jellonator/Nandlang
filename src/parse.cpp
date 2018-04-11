@@ -29,31 +29,34 @@ bool isCharacterAllowed(char c)
 
 /// Get the actual char value from a char string
 /// Given string should NOT be surrounded in single quotes
-char getCharLiteralFromString(const std::string& id)
+/// Returns true if the character was successfully parsed.
+bool getCharLiteralFromString(const std::string& id, char& c)
 {
     // can't be valid if it is empty
     if (id.size() < 1) {
-        return 0;
+        return false;
     }
     // Test if first character is escape sequence
     bool is_escape = id[0] == ESCAPE;
     if (is_escape) {
         // Escape sequence must be two characters
         if (id.size() != 2) {
-            return 0;
+            return false;
         }
         // Lookup in escape table
         if (ESCAPE_LOOKUP.count(id[1])) {
-            return ESCAPE_LOOKUP.at(id[1]);
+            c = ESCAPE_LOOKUP.at(id[1]);
+            return true;
         } else {
-            return 0;
+            return false;
         }
     } else {
         // Return character as literal
         if (id.size() != 1) {
-            return 0;
+            return false;
         }
-        return id[0];
+        c = id[0];
+        return true;
     }
 }
 
@@ -161,8 +164,7 @@ void parseChar(std::istream& stream, TokenBlock& block, DebugInfo& context)
             throwError(info, s.str());
         }
     }
-    c = getCharLiteralFromString(charstring);
-    if (c) {
+    if (getCharLiteralFromString(charstring, c)) {
         // Character literals are expanded to 8 bool literals
         for (size_t i = 0; i < 8; ++i) {
             // Most significant bit comes first, since this language behaves in
@@ -189,7 +191,6 @@ TokenBlock _parseTokens(std::istream& stream, DebugInfo& context, char endc)
     TokenBlock block;
     std::string identifier;
     DebugInfo id_info;
-    char c;
     // Having three different DebugInfo objects is a little confusing, but there
     // is VERY good reason for doing so. Here they are explained:
     //  * id_info - DebugInfo for the beginning of the identifier
@@ -199,6 +200,7 @@ TokenBlock _parseTokens(std::istream& stream, DebugInfo& context, char endc)
     //              right after every read, context can not be used as it
     //              will actually point to the NEXT character. So, there must be
     //              an info object that points to the current one.
+    char c;
     while (stream.get(c)) {
         const DebugInfo info = context;
         context.column += 1;
