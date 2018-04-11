@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <iomanip>
+#include <chrono>
 
 /// Replace every tab character with the given number of spaces
 std::string replaceTabs(const std::string& str, size_t spaces)
@@ -58,20 +60,44 @@ void handleError(const DebugError& e)
     std::cout << errline << std::endl;
 }
 
+void printTime(std::ostream& stream, const std::string& s, std::chrono::duration<double> t)
+{
+    double usec = std::chrono::duration_cast<std::chrono::microseconds>(t).count();
+    stream << s << std::fixed << std::setprecision(2) << std::setw(8)
+           << std::right;
+    if (usec >= 1000000.0) {
+        stream << usec/1000000.0 << " s" << std::endl;
+    } else if (usec >= 1000.0) {
+        stream << usec/1000.0 << " ms" << std::endl;
+    } else {
+        stream << usec << " us" << std::endl;
+    }
+}
+
 void run(std::istream& stream, const DebugInfo& info)
 {
     // create debugging information
     try {
+        auto time_start = std::chrono::system_clock::now();
         // parse characters into tokens
         TokenBlock block = parseTokens(stream, info);
+        auto time_parse = std::chrono::system_clock::now();
         // create execution state
         State state;
         // load functions from token block
         state.parse(std::move(block));
+        auto time_compile = std::chrono::system_clock::now();
         // check for integrity issues
         state.check();
+        auto time_check = std::chrono::system_clock::now();
         // call main function
         state.getFunction("main").call(state);
+        auto time_run = std::chrono::system_clock::now();
+        std::cout << "Step      | Duration" << std::endl;
+        printTime(std::cout, "Parsing   | ", time_parse-time_start);
+        printTime(std::cout, "Compiling | ", time_compile-time_parse);
+        printTime(std::cout, "Checking  | ", time_check-time_compile);
+        printTime(std::cout, "Running   | ", time_run-time_check);
     } catch (DebugError& e) {
         handleError(e);
     } catch (std::exception& e) {

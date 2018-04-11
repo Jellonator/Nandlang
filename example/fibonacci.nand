@@ -25,8 +25,11 @@ function eq(a, b : out) {
 
 // full adder
 function add(a, b, cin : v, cout) {
-    v = xor(cin, xor(a, b));
-    cout = or(and(a, b), and(xor(a, b), cin));
+	var nab = a ! b;
+	v = (a ! nab) ! (b ! nab);
+	var nvc = v ! cin;
+	cout = nvc ! nab;
+	v = (v ! nvc) ! (cin ! nvc);
 }
 
 // 8 bit adder
@@ -66,13 +69,23 @@ function equal8(a[8], b[8] : out) {
 
 // returns the Fibonacci number for the given input
 function fibonacci(i[8] : o[8]) {
-    var check[7], _ = i;
-    var is_equal = equal8(check,0, 0,0,0,0,0,0,0,0);
+    var a[8] = 0,0,0,0,0,0,0,0;
+    var b[8] = 0,0,0,0,0,0,0,1;
+    var compl[8] = complement8(0,0,0,0,0,0,0,1);
+    while not(equal8(i, 0,0,0,0,0,0,0,0)) {
+        i = add8(i, compl);
+        a, b = b, add8(a, b);
+    }
+    o = a;
+}
+
+// Recursive Fibonacci sequence
+function fibonacciR(i[8] : o[8]) {
+    var is_equal = equal8(i, 0,0,0,0,0,0,0,i[7]);
     if is_equal {
         // return input if equal to 1 or 0
         o = i;
-    }
-    if not(is_equal) {
+    } else {
         // o = fibonacci(i - 1) + fibonacci(i - 2);
         o = add8(
             fibonacci(sub8(i, 0,0,0,0,0,0,0,1)),
@@ -83,6 +96,12 @@ function fibonacci(i[8] : o[8]) {
 
 function main()
 {
+    putc('L');
+    putc('o');
+    putc('o');
+    putc('p');
+    putc(':');
+    endl();
     var value[8] = 0,0,0,0,0,0,0,0;
     while not(equal8(value, 0,0,0,0,1,1,1,0)) {
         // to output strings multiple individual putc calls are needed
@@ -95,6 +114,33 @@ function main()
         putc('=');
         putc(' ');
         puti8(fibonacci(value));
+        endl();
+        // increment
+        value = add8(value, 0,0,0,0,0,0,0,1);
+    }
+    putc('R');
+    putc('e');
+    putc('c');
+    putc('u');
+    putc('r');
+    putc('s');
+    putc('i');
+    putc('v');
+    putc('e');
+    putc(':');
+    endl();
+    value = 0,0,0,0,0,0,0,0;
+    while not(equal8(value, 0,0,0,0,1,1,1,0)) {
+        // to output strings multiple individual putc calls are needed
+        putc('F');
+        putc('i');
+        putc('b');
+        putc(' ');
+        puti8(value);
+        putc(' ');
+        putc('=');
+        putc(' ');
+        puti8(fibonacciR(value));
         endl();
         // increment
         value = add8(value, 0,0,0,0,0,0,0,1);
