@@ -171,7 +171,7 @@ function complement8(i[8] : o[8]) {
     o = add8(
         not(i[0]), not(i[1]), not(i[2]), not(i[3]),
         not(i[4]), not(i[5]), not(i[6]), not(i[7]),
-        0, 0, 0, 0, 0, 0, 0, 1);
+        1[8]);
 }
 
 function equal8(a[8], b[8] : out) {
@@ -186,17 +186,17 @@ function zero(: ret[2048]) {}
 
 function main()
 {
-    var index[8] = 0, 0, 0, 0, 0, 0, 0, 0;
-    var memory[2048] = zero();
+    var index[8] = 0[8];
+    var memory[2048] = 0[2048];
     while iogood() {
         var v[8] = getc();
-        if not(equal8(v, 0, 0, 0, 0, 1, 0, 1, 0)) {
+        if not(equal8(v, 10[8])) {
             memory = setindex8(memory, index, v);
-            index = add8(index, 0, 0, 0, 0, 0, 0, 0, 1);
+            index = add8(index, 1[8]);
         }
     }
-    while not(equal8(index, 0, 0, 0, 0, 0, 0, 0, 0)) {
-        index = sub8(index, 0, 0, 0, 0, 0, 0, 0, 1);
+    while not(equal8(index, 0[8])) {
+        index = sub8(index, 1[8]);
         putc(index8(memory, index));
     }
     endl();

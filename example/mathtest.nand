@@ -90,9 +90,9 @@ function ge8(a[8], b[8] : out) {
 
 // Divides A by B and returns the quotient.
 function divide8(a[8], b[8] : o[8]) {
-	o = 0,0,0,0,0,0,0,0;
+	o = 0[8];
 	while ge8(a, b) {
-		o = add8(o, 0,0,0,0,0,0,0,1);
+		o = add8(o, 1[8]);
 		a = sub8(a, b);
 	}
 }
@@ -100,36 +100,40 @@ function divide8(a[8], b[8] : o[8]) {
 // Multiplies A and B and requrns the product.
 function multiply8(a[8], b[8] : o[8]) {
 	// outputs must be initialized first.
-	o = 0,0,0,0,0,0,0,0;
-	while not(eq8(b, 0,0,0,0,0,0,0,0)) {
+	o = 0[8];
+	while not(eq8(b, 0[8])) {
 		// outputs can be re-assigned.
 		o = add8(a, o);
-		b = sub8(b, 0,0,0,0,0,0,0,1);
+		b = sub8(b, 1[8]);
 	}
 }
 
 // Returns the modulo of A and B.
 function mod8(a[8], b[8] : o[8]) {
-	o = sub8(a, multiply8(b, divide8(a, b)));
+	o = complement8(b);
+	while ge8(a, b) {
+		a = add8(a, o);
+	}
+	o = a;
 }
 
 function main() {
-	puti8(add8(0,0,0,0,0,0,1,1, 0,0,0,0,0,1,0,1));
+	puti8(add8(7[8], 5[8]));
 	endl();
-	puti8(complement8(0,0,0,0,0,0,1,1));
+	puti8(complement8(17[8]));
 	endl();
-	puti8(sub8(0,0,0,0,1,1,0,1, 0,0,0,0,0,0,1,1));
+	puti8(sub8(22[8], 12[8]));
 	endl();
-	puti8(multiply8(0,0,0,0,0,0,1,1, 0,0,0,0,0,1,0,1));
+	puti8(multiply8(9[8], 6[8]));
 	endl();
-	puti8(divide8(0,0,0,0,1,1,1,1, 0,0,0,0,0,0,1,1));
+	puti8(divide8(56[8], 7[8]));
 	endl();
-	puti8(divide8(0,0,0,0,1,1,1,0, 0,0,0,0,0,0,1,1));
+	puti8(divide8(55[8], 7[8]));
 	endl();
-	puti8(divide8(0,0,0,0,1,1,1,1, 0,0,0,0,0,1,0,1));
+	puti8(divide8(56[8], 8[8]));
 	endl();
-	puti8(divide8(0,0,0,0,1,1,1,0, 0,0,0,0,0,1,0,1));
+	puti8(divide8(55[8], 8[8]));
 	endl();
-	puti8(mod8(0,0,0,0,1,1,0,1, 0,0,0,0,0,1,0,1));
+	puti8(mod8(55[8], 8[8]));
 	endl();
 }

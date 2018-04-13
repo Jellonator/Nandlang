@@ -102,8 +102,8 @@ function mod8(a[8], b[8] : o[8]) {
 
 // Fizzbuzz
 function fizzbuzz(v[8]) {
-	var fizz = eq8(mod8(v, 0,0,0,0,0,0,1,1), 0,0,0,0,0,0,0,0);
-	var buzz = eq8(mod8(v, 0,0,0,0,0,1,0,1), 0,0,0,0,0,0,0,0);
+	var fizz = eq8(mod8(v, 3[8]), 0[8]);
+	var buzz = eq8(mod8(v, 5[8]), 0[8]);
 	if fizz {
 		putc('F');
 		putc('i');
@@ -120,13 +120,13 @@ function fizzbuzz(v[8]) {
 		puti8(v);
 	}
 	endl();
-	if not(eq8(v, 1,1,1,1,1,1,1,1)) {
+	if not(eq8(v, 255[8])) {
 		// Can use recursion.
-		fizzbuzz(add8(v, 0,0,0,0,0,0,0,1));
+		fizzbuzz(add8(v, 1[8]));
 	}
 }
 
 // Entry point.
 function main() {
-	fizzbuzz(0,0,0,0,0,0,0,0);
+	fizzbuzz(0[8]);
 }

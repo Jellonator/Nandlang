@@ -50,7 +50,7 @@ function complement8(i[8] : o[8]) {
     o = add8(
         not(i[0]), not(i[1]), not(i[2]), not(i[3]),
         not(i[4]), not(i[5]), not(i[6]), not(i[7]),
-        0, 0, 0, 0, 0, 0, 0, 1);
+        1[8]);
 }
 
 // 8 bit subtraction
@@ -69,10 +69,10 @@ function equal8(a[8], b[8] : out) {
 
 // returns the Fibonacci number for the given input
 function fibonacci(i[8] : o[8]) {
-    var a[8] = 0,0,0,0,0,0,0,0;
-    var b[8] = 0,0,0,0,0,0,0,1;
-    var compl[8] = complement8(0,0,0,0,0,0,0,1);
-    while not(equal8(i, 0,0,0,0,0,0,0,0)) {
+    var a[8] = 0[8];
+    var b[8] = 1[8];
+    var compl[8] = complement8(1[8]);
+    while not(equal8(i, 0[8])) {
         i = add8(i, compl);
         a, b = b, add8(a, b);
     }
@@ -81,15 +81,15 @@ function fibonacci(i[8] : o[8]) {
 
 // Recursive Fibonacci sequence
 function fibonacciR(i[8] : o[8]) {
-    var is_equal = equal8(i, 0,0,0,0,0,0,0,i[7]);
+    var is_equal = equal8(i, 0[7], i[7]);
     if is_equal {
         // return input if equal to 1 or 0
         o = i;
     } else {
         // o = fibonacci(i - 1) + fibonacci(i - 2);
         o = add8(
-            fibonacci(sub8(i, 0,0,0,0,0,0,0,1)),
-            fibonacci(sub8(i, 0,0,0,0,0,0,1,0))
+            fibonacci(sub8(i, 1[8])),
+            fibonacci(sub8(i, 2[8]))
         );
     }
 }
@@ -102,8 +102,8 @@ function main()
     putc('p');
     putc(':');
     endl();
-    var value[8] = 0,0,0,0,0,0,0,0;
-    while not(equal8(value, 0,0,0,0,1,1,1,0)) {
+    var value[8] = 0[8];
+    while not(equal8(value, 14[8])) {
         // to output strings multiple individual putc calls are needed
         putc('F');
         putc('i');
@@ -116,7 +116,7 @@ function main()
         puti8(fibonacci(value));
         endl();
         // increment
-        value = add8(value, 0,0,0,0,0,0,0,1);
+        value = add8(value, 1[8]);
     }
     putc('R');
     putc('e');
@@ -129,8 +129,8 @@ function main()
     putc('e');
     putc(':');
     endl();
-    value = 0,0,0,0,0,0,0,0;
-    while not(equal8(value, 0,0,0,0,1,1,1,0)) {
+    value = 0[8];
+    while not(equal8(value, 14[8])) {
         // to output strings multiple individual putc calls are needed
         putc('F');
         putc('i');
@@ -143,6 +143,6 @@ function main()
         puti8(fibonacciR(value));
         endl();
         // increment
-        value = add8(value, 0,0,0,0,0,0,0,1);
+        value = add8(value, 1[8]);
     }
 }
