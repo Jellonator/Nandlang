@@ -29,13 +29,7 @@ const std::map<Symbol, char> symbolBlocks = {
 };
 
 Token::Token(Symbol symbol, const DebugInfo& info)
-: Debuggable(info), m_symbol(symbol), m_value(false), m_index(0) {}
-
-Token::Token(Symbol symbol, bool value, const DebugInfo& info)
-: Token(symbol, info)
-{
-    setValue(value);
-}
+: Debuggable(info), m_symbol(symbol), m_value(0) {}
 
 Token::Token(Symbol symbol, std::string id, const DebugInfo& info)
 : Token(symbol, info)
@@ -49,10 +43,10 @@ Token::Token(Symbol symbol, TokenBlock block, const DebugInfo& info)
     m_block = block;
 }
 
-Token::Token(Symbol symbol, size_t index, const DebugInfo& info)
+Token::Token(Symbol symbol, size_t value, const DebugInfo& info)
 : Token(symbol, info)
 {
-    m_index = index;
+    setValue(value);
 }
 
 Symbol Token::getSymbol() const
@@ -65,14 +59,9 @@ const std::string& Token::getIdentifier() const
     return m_identifier;
 }
 
-bool Token::getValue() const
+size_t Token::getValue() const
 {
     return m_value;
-}
-
-size_t Token::getIndex() const
-{
-    return m_index;
 }
 
 const TokenBlock& Token::getBlock() const
@@ -92,7 +81,7 @@ void Token::setIdentifier(const std::string& id)
     m_identifier = id;
 }
 
-void Token::setValue(bool value)
+void Token::setValue(size_t value)
 {
     m_value = value;
 }
@@ -151,7 +140,7 @@ void printBlock(const TokenBlock& block)
             std::cout << ")";
             break;
         case Symbol::INDEX:
-            std::cout << "[" << t.getIndex() << "]";
+            std::cout << "[" << t.getValue() << "]";
             break;
         case Symbol::IDENTIFIER: std::cout << t.getIdentifier() << " "; break;
         case Symbol::LINESEP:    std::cout << ";" << std::endl; break;

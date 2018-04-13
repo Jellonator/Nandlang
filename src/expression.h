@@ -103,6 +103,7 @@ public:
 class ExpressionLiteralArray : public Expression {
     std::vector<bool> m_values;
 public:
+    /// Constructor expects values in reverse order
     ExpressionLiteralArray(const DebugInfo&, std::vector<bool>&&);
     void resolve(State&) const override;
     uint64_t getInputNum(State&) const override;

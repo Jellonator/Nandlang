@@ -3,6 +3,17 @@
 #include <stdexcept>
 #include <sstream>
 #include <functional>
+#include <cmath>
+
+/// Returns the number of bits required to store the given value.
+size_t getRequiredBits(size_t value)
+{
+    if (value == 0) {
+        return 1;
+    } else {
+        return std::log2(value) + 1;
+    }
+}
 
 /// Makes sure that the given token has the given symbol.
 void assertToken(Token& token, Symbol expected)
@@ -156,7 +167,7 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
         assertToken(t, Symbol::IDENTIFIER);
         if (tokens.peek() == Symbol::INDEX) {
             Token tokenIndex = tokens.pop();
-            names.insertIndexed(t, tokenIndex.getIndex());
+            names.insertIndexed(t, tokenIndex.getValue());
         } else {
             names.insert(t);
         }
@@ -170,7 +181,7 @@ std::pair<std::string, FunctionPtr> parseFunction(TokenTaker& tokens)
         assertToken(t, Symbol::IDENTIFIER);
         if (tokens.peek() == Symbol::INDEX) {
             Token tokenIndex = tokens.pop();
-            names.insertIndexed(t, tokenIndex.getIndex());
+            names.insertIndexed(t, tokenIndex.getValue());
         } else {
             names.insert(t);
         }
@@ -213,7 +224,7 @@ ExpressionPtr parseExpressionIdentifier(
     NameStackDef def;
     if (tokens.peek() == Symbol::INDEX) {
         Token tokenIndex = tokens.pop();
-        def = names.getPositionIndexed(token_id, tokenIndex.getIndex());
+        def = names.getPositionIndexed(token_id, tokenIndex.getValue());
     } else {
         def = names.getPosition(token_id);
     }
@@ -258,11 +269,34 @@ ExpressionPtr parseExpression(TokenTaker& tokens, NameStack& names)
     } else if (first == Symbol::LITERAL) {
         // literal value
         Token t = tokens.pop();
-        left = std::make_unique<ExpressionLiteral>(
-            t.getDebugInfo(), t.getValue());
+        size_t bits_max = 1;
+        size_t bits_required = getRequiredBits(t.getValue());
+        if (tokens.peek() == Symbol::INDEX) {
+            bits_max = tokens.pop().getValue();
+        }
+        if (bits_required > bits_max) {
+            std::stringstream s;
+            s << "Value " << t.getValue() << " is too big to fit in "
+              << bits_max << " bits";
+            t.throwError(s.str());
+        }
+        if (bits_max == 1) {
+            left = std::make_unique<ExpressionLiteral>(
+                t.getDebugInfo(), t.getValue());
+        } else {
+            std::vector<bool> arr;
+            arr.reserve(bits_max);
+            size_t value = t.getValue();
+            for (size_t i = 0; i < bits_max; ++i) {
+                arr.push_back(value & 0x01);
+                value >>= 1;
+            }
+            left = std::make_unique<ExpressionLiteralArray>(
+                t.getDebugInfo(), std::move(arr));
+        }
     } else {
         std::stringstream s;
-        s << "Unexpected " << first << " in expression.";
+        s << "Unexpected " << first << " in expression";
         tokens.front().throwError(s.str());
     }
     auto second = tokens.peek();
@@ -352,7 +386,7 @@ StatementPtr parseStatementAssign(TokenTaker& tokens, NameStack& names)
         size_t index;
         if (tokens.peek() == Symbol::INDEX) {
             Token tokenIndex = tokens.pop();
-            index = tokenIndex.getIndex();
+            index = tokenIndex.getValue();
             is_indexed = true;
         }
         if (is_var) {

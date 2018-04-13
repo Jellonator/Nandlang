@@ -11,6 +11,20 @@ const char ESCAPE = '\\';
 const char INDEX_BEGIN = '[';
 const char INDEX_END = ']';
 
+size_t strToNumber(const std::string& str, const std::string& err,
+    const DebugInfo& info)
+{
+    size_t value;
+    std::stringstream indexstream(str);
+    indexstream >> value;
+    if (!indexstream.eof() || indexstream.bad()) {
+        std::stringstream s;
+        s << err << " " << str;
+        throwError(info, s.str());
+    }
+    return value;
+}
+
 /// Maps character escape codes to their representations
 const std::map<char, char> ESCAPE_LOOKUP = {
     {'0', '\0'},
@@ -76,23 +90,23 @@ bool isStringIdentifier(const std::string& id)
 /// Append the given identifier to the token block. The given identifier may
 /// be transformed into other token types, e.g. Symbol::WHILE if it matches a
 /// keyword, or a literal if it is a boolean literal.
-void appendIdentifier(TokenBlock& block, std::string& id, DebugInfo info)
+void appendIdentifier(TokenBlock& block, std::string& id, const DebugInfo& info)
 {
     if (id.empty()) {
         return;
     }
-    if (id == "0") {
-        block.push_back(Token(Symbol::LITERAL, false, info));
-    } else if (id == "1") {
-        block.push_back(Token(Symbol::LITERAL, true, info));
-    } else if (keywordMap.count(id)) {
+    // if (id == "0") {
+    //     block.push_back(Token(Symbol::LITERAL, false, info));
+    // } else if (id == "1") {
+    //     block.push_back(Token(Symbol::LITERAL, true, info));
+    // } else
+    if (keywordMap.count(id)) {
         block.push_back(Token(keywordMap.at(id), info));
     } else if (isStringIdentifier(id)) {
         block.push_back(Token(Symbol::IDENTIFIER, id, info));
     } else {
-        std::stringstream s;
-        s << "Bad identifier " << id;
-        throwError(info, s.str());
+        size_t value = strToNumber(id, "Bad identifier", info);
+        block.push_back(Token(Symbol::LITERAL, value, info));
     }
     id = "";
 }
@@ -129,14 +143,7 @@ void parseIndex(std::istream& stream, TokenBlock& block, DebugInfo& context)
             throwError(info, s.str());
         }
     }
-    size_t index;
-    std::stringstream indexstream(indexstring);
-    indexstream >> index;
-    if (!indexstream.eof() || indexstream.bad()) {
-        std::stringstream s;
-        s << "Invalid index " << indexstring;
-        throwError(info, s.str());
-    }
+    size_t index = strToNumber(indexstring, "Invalid index", info);
     block.push_back(Token(Symbol::INDEX, index, info));
 }
 

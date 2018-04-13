@@ -34,12 +34,10 @@ typedef std::deque<Token> TokenBlock;
 class Token : public Debuggable {
     Symbol m_symbol;
     std::string m_identifier; // for Identifier symbols
-    bool m_value;             // for Literal symbols
     TokenBlock m_block;       // Used for enclosing symbols, e.g. braces
-    size_t m_index;           // Used for index symbol
+    size_t m_value;           // for Literal symbols and indexes
 public:
     Token(Symbol, const DebugInfo&);
-    Token(Symbol, bool, const DebugInfo&);
     Token(Symbol, std::string, const DebugInfo&);
     Token(Symbol, TokenBlock, const DebugInfo&);
     Token(Symbol, size_t, const DebugInfo&);
@@ -47,10 +45,8 @@ public:
     Symbol getSymbol() const;
     /// Get this token's identifier
     const std::string& getIdentifier() const;
-    /// Get this token's literal value.
-    bool getValue() const;
     /// Get index
-    size_t getIndex() const;
+    size_t getValue() const;
     /// Get this token's block
     const TokenBlock& getBlock() const;
     /// Get a mutable reference to the token block
@@ -58,7 +54,7 @@ public:
     /// Set identifier
     void setIdentifier(const std::string&);
     /// Set literal value
-    void setValue(bool);
+    void setValue(size_t);
 };
 
 std::ostream& operator<<(std::ostream&, const Symbol&);
