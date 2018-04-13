@@ -114,7 +114,7 @@ const char* coolstuff =
 "!!  !! !!!!  !!   !!  !! !!!!  !!   !!  !!       !!   !!  !! !!!!  !!   !!  !!\n"
 "    !!  !!!  !!   !!  !!  !!!  !!  !!   !!       !!   !!  !!  !!!  !!!!!!!    \n"
 "!!  !!   !!  !!   !!  !!   !!  !!!!!    !!!!!!!  !!   !!  !!   !!   !!! !!  !!\n"
-"An esoteric programming language based on NAND completeness";
+"Nandlang v1.2, An esoteric programming language based on NAND completeness";
 
 int main(int argc, char **argv)
 {

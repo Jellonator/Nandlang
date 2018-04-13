@@ -186,3 +186,29 @@ void ExpressionLiteral::check(State& state) const
 {
     // nothing to do
 }
+
+ExpressionLiteralArray::ExpressionLiteralArray(
+    const DebugInfo& info, std::vector<bool>&& values)
+: Expression(info), m_values(values) {}
+
+void ExpressionLiteralArray::resolve(State& state) const
+{
+    for (size_t i = 0; i < m_values.size(); ++i) {
+        state.push(m_values[i]);
+    }
+}
+
+uint64_t ExpressionLiteralArray::getInputNum(State& state) const
+{
+    return 0;
+}
+
+uint64_t ExpressionLiteralArray::getOutputNum(State& state) const
+{
+    return 1;
+}
+
+void ExpressionLiteralArray::check(State& state) const
+{
+    // nothing to do
+}

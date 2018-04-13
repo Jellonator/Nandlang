@@ -1,5 +1,5 @@
 # NANDLANG
-Nandlang version 1.1
+Nandlang version 1.2
 
 A programming language based on NAND completeness.
 

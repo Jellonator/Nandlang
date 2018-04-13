@@ -98,3 +98,14 @@ public:
     uint64_t getOutputNum(State&) const override;
     void check(State&) const override;
 };
+
+/// A literal array expression
+class ExpressionLiteralArray : public Expression {
+    std::vector<bool> m_values;
+public:
+    ExpressionLiteralArray(const DebugInfo&, std::vector<bool>&&);
+    void resolve(State&) const override;
+    uint64_t getInputNum(State&) const override;
+    uint64_t getOutputNum(State&) const override;
+    void check(State&) const override;
+};
