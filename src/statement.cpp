@@ -3,7 +3,8 @@
 #include <stdexcept>
 #include <sstream>
 
-void checkStatements(State& state, const std::vector<StatementPtr>& statements)
+void checkStatements(const State& state,
+    const std::vector<StatementPtr>& statements)
 {
     for (const auto& stmt : statements) {
         stmt->check(state);
@@ -32,7 +33,7 @@ void StatementAssign::resolve(State& state) const
     }
 }
 
-void StatementAssign::check(State& state) const
+void StatementAssign::check(const State& state) const
 {
     checkExpressions(state, m_expressions);
     if (m_variables.size() != countOutputs(state, m_expressions)) {
@@ -67,7 +68,7 @@ void StatementVariable::resolve(State& state) const
     }
 }
 
-void StatementVariable::check(State& state) const
+void StatementVariable::check(const State& state) const
 {
     checkExpressions(state, m_expressions);
     if (m_variables.size() != countOutputs(state, m_expressions)) {
@@ -104,7 +105,7 @@ void StatementIf::resolve(State& state) const
     state.resize(prev);
 }
 
-void StatementIf::check(State& state) const
+void StatementIf::check(const State& state) const
 {
     m_condition->check(state);
     if (m_condition->getOutputNum(state) != 1) {
@@ -139,7 +140,7 @@ void StatementWhile::resolve(State& state) const
     state.resize(prev);
 }
 
-void StatementWhile::check(State& state) const
+void StatementWhile::check(const State& state) const
 {
     m_condition->check(state);
     if (m_condition->getOutputNum(state) != 1) {
@@ -160,7 +161,7 @@ void StatementExpression::resolve(State& state) const
     m_expression->resolve(state);
 }
 
-void StatementExpression::check(State& state) const
+void StatementExpression::check(const State& state) const
 {
     m_expression->check(state);
     if (m_expression->getOutputNum(state) > 0) {

@@ -17,9 +17,11 @@ class State {
 public:
     State();
     /// Get a function from name
-    bool hasFunction(const std::string& name);
+    bool hasFunction(const std::string& name) const;
     /// Get a function from name
     Function& getFunction(const std::string& name);
+    /// Get a constant function from name
+    const Function& getFunction(const std::string& name) const;
     /// push value to stack
     void push(bool value);
     /// Pop value from stack

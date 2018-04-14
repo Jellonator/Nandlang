@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <sstream>
 
-size_t countOutputs(State& state,
+size_t countOutputs(const State& state,
     const std::vector<ExpressionPtr>& expressions)
 {
     size_t ret = 0;
@@ -13,7 +13,7 @@ size_t countOutputs(State& state,
     return ret;
 }
 
-void checkExpressions(State& state,
+void checkExpressions(const State& state,
     const std::vector<ExpressionPtr>& expressions)
 {
     for (const auto& expr : expressions) {
@@ -37,17 +37,12 @@ void ExpressionNand::resolve(State& state) const
     state.push(!(left && right));
 }
 
-uint64_t ExpressionNand::getInputNum(State& state) const
-{
-    return 2;
-}
-
-uint64_t ExpressionNand::getOutputNum(State& state) const
+uint64_t ExpressionNand::getOutputNum(const State& state) const
 {
     return 1;
 }
 
-void ExpressionNand::check(State& state) const
+void ExpressionNand::check(const State& state) const
 {
     m_left->check(state);
     m_right->check(state);
@@ -71,33 +66,24 @@ m_arguments(std::move(args)), m_function(nullptr) {}
 
 void ExpressionFunction::resolve(State& state) const
 {
-    // Function& func = state.getFunction(m_functionName);
     for (auto iter = m_arguments.begin(); iter != m_arguments.end(); iter ++) {
         // push in forward order
         (*iter)->resolve(state);
     }
+    if (!m_function) {
+        Function& func = state.getFunction(m_functionName);
+        m_function = &func;
+    }
     m_function->call(state);
 }
 
-uint64_t ExpressionFunction::getInputNum(State& state) const
+uint64_t ExpressionFunction::getOutputNum(const State& state) const
 {
-    if (m_function == nullptr) {
-        return 0;
-    }
-    Function& func = state.getFunction(m_functionName);
-    return func.getInputNum();
-}
-
-uint64_t ExpressionFunction::getOutputNum(State& state) const
-{
-    if (m_function == nullptr) {
-        return 0;
-    }
-    Function& func = state.getFunction(m_functionName);
+    const Function& func = state.getFunction(m_functionName);
     return func.getOutputNum();
 }
 
-void ExpressionFunction::check(State& state) const
+void ExpressionFunction::check(const State& state) const
 {
     if (!state.hasFunction(m_functionName)) {
         std::stringstream s;
@@ -105,10 +91,12 @@ void ExpressionFunction::check(State& state) const
         throwError(s.str());
     }
     checkExpressions(state, m_arguments);
-    m_function = &state.getFunction(m_functionName);
-    if (m_function->getInputNum() != countOutputs(state, m_arguments)) {
+    const Function& func = state.getFunction(m_functionName);
+    size_t inputnum = countOutputs(state, m_arguments);
+    if (func.getInputNum() != inputnum) {
         std::stringstream s;
-        s << "Function expected different number of inputs.";
+        s << "Function " << m_functionName << " expected "
+          << func.getInputNum() << " inputs; got " << inputnum;
         throwError(s.str());
     }
     // Do NOT check func here because functions are already checked by State
@@ -118,7 +106,7 @@ ExpressionVariable::ExpressionVariable(
     const DebugInfo& info, size_t pos)
 : Expression(info), m_pos(pos) {}
 
-void ExpressionVariable::check(State& state) const
+void ExpressionVariable::check(const State& state) const
 {
     // nothing to do
 }
@@ -128,12 +116,7 @@ void ExpressionVariable::resolve(State& state) const
     state.push(state.getVar(m_pos));
 }
 
-uint64_t ExpressionVariable::getInputNum(State& state) const
-{
-    return 0;
-}
-
-uint64_t ExpressionVariable::getOutputNum(State& state) const
+uint64_t ExpressionVariable::getOutputNum(const State& state) const
 {
     return 1;
 }
@@ -142,7 +125,7 @@ ExpressionArray::ExpressionArray(
     const DebugInfo& info, size_t pos, size_t size)
 : Expression(info), m_pos(pos), m_size(size) {}
 
-void ExpressionArray::check(State& state) const
+void ExpressionArray::check(const State& state) const
 {
     // nothing to do
 }
@@ -154,12 +137,7 @@ void ExpressionArray::resolve(State& state) const
     }
 }
 
-uint64_t ExpressionArray::getInputNum(State& state) const
-{
-    return 0;
-}
-
-uint64_t ExpressionArray::getOutputNum(State& state) const
+uint64_t ExpressionArray::getOutputNum(const State& state) const
 {
     return m_size;
 }
@@ -172,17 +150,12 @@ void ExpressionLiteral::resolve(State& state) const
     state.push(m_value);
 }
 
-uint64_t ExpressionLiteral::getInputNum(State& state) const
-{
-    return 0;
-}
-
-uint64_t ExpressionLiteral::getOutputNum(State& state) const
+uint64_t ExpressionLiteral::getOutputNum(const State& state) const
 {
     return 1;
 }
 
-void ExpressionLiteral::check(State& state) const
+void ExpressionLiteral::check(const State& state) const
 {
     // nothing to do
 }
@@ -198,17 +171,12 @@ void ExpressionLiteralArray::resolve(State& state) const
     }
 }
 
-uint64_t ExpressionLiteralArray::getInputNum(State& state) const
-{
-    return 0;
-}
-
-uint64_t ExpressionLiteralArray::getOutputNum(State& state) const
+uint64_t ExpressionLiteralArray::getOutputNum(const State& state) const
 {
     return m_values.size();
 }
 
-void ExpressionLiteralArray::check(State& state) const
+void ExpressionLiteralArray::check(const State& state) const
 {
     // nothing to do
 }

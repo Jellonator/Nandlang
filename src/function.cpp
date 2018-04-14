@@ -25,7 +25,7 @@ void FunctionExternal::call(State& state) const
     m_function(state);
 }
 
-void FunctionExternal::check(State& state) const
+void FunctionExternal::check(const State& state) const
 {
     // nothing to do
 }
@@ -76,7 +76,7 @@ void FunctionInternal::call(State& state) const
     state.resize(prev_size - m_inputs + m_outputs);
 }
 
-void FunctionInternal::check(State& state) const
+void FunctionInternal::check(const State& state) const
 {
     checkStatements(state, m_block);
 }

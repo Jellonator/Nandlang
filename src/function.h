@@ -20,7 +20,7 @@ public:
     virtual void call(State&) const = 0;
     /// Check the function to ensure consistency and integrity.
     /// Throws an exception on failure.
-    virtual void check(State&) const = 0;
+    virtual void check(const State&) const = 0;
 };
 
 typedef std::unique_ptr<Function> FunctionPtr;
@@ -36,7 +36,7 @@ public:
     uint64_t getInputNum() const override;
     uint64_t getOutputNum() const override;
     void call(State&) const override;
-    void check(State&) const override;
+    void check(const State&) const override;
 };
 
 /// An internal Nandlang function
@@ -50,5 +50,5 @@ public:
     uint64_t getInputNum() const override;
     uint64_t getOutputNum() const override;
     void call(State&) const override;
-    void check(State&) const override;
+    void check(const State&) const override;
 };

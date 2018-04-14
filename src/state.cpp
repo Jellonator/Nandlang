@@ -78,12 +78,23 @@ State::State()
     }
 }
 
-bool State::hasFunction(const std::string& name)
+bool State::hasFunction(const std::string& name) const
 {
     return m_functions.count(name) > 0;
 }
 
 Function& State::getFunction(const std::string& name)
+{
+    if (m_functions.count(name)) {
+        return *m_functions.at(name);
+    } else {
+        std::stringstream s;
+        s << "No function of name \"" << name << "\"";
+        throw std::runtime_error(s.str());
+    }
+}
+
+const Function& State::getFunction(const std::string& name) const
 {
     if (m_functions.count(name)) {
         return *m_functions.at(name);
