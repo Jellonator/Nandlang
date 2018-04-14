@@ -165,7 +165,6 @@ void State::check() const
 void State::optimize()
 {
     for (auto& func : m_functions) {
-        std::cout << func.first << " " << int(func.second->getConstantLevel(*this)) << std::endl;
         func.second->optimize(*this);
     }
 }

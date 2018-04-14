@@ -43,8 +43,9 @@ void optimizeExpressions(State& state,
         }
         iter_begin = iter+1;
         num_used = 0;
+        num_bits = 0;
     };
-    while (iter != expressions.end()) {
+    while (iter < expressions.end()) {
         if ((*iter)->getConstantLevel(state) >= ConstantLevel::CONSTANT) {
             ++num_used;
             (*iter)->resolve(state);

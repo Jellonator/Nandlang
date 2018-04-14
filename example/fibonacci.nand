@@ -71,9 +71,8 @@ function equal8(a[8], b[8] : out) {
 function fibonacci(i[8] : o[8]) {
     var a[8] = 0[8];
     var b[8] = 1[8];
-    var compl[8] = complement8(1[8]);
-    while not(equal8(i, 0[8])) {
-        i = add8(i, compl);
+    while not(equal8(i, 0,0,0,0,0,0,0,0)) {
+        i = add8(i, complement8(1[8]));
         a, b = b, add8(a, b);
     }
     o = a;

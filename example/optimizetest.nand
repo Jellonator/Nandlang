@@ -1,44 +1,32 @@
-// Not function implemented with NAND logic
-// Has one input called 'in' and one output called 'out'.
 function not(in : out) {
 	out = in ! in;
 }
 
-// And function
 function and(a, b : out) {
 	out = not(a ! b);
 }
 
-// Or function
 function or(a, b : out) {
 	out = not(a) ! not(b);
 }
 
-// Outputs 1 if both a and b are equal
 function eq(a, b : out) {
 	out = not(xor(a, b));
 }
 
-// Outputs 1 if a is greater than or equal to b
 function gr(a, b : out) {
 	out = and(a, not(b));
 }
 
-// Xor
 function xor(a, b : out) {
 	out = or(and(a, not(b)), and(not(a), b));
 }
 
-// Full adder. Outputs value as V and carry as C.
 function add(a, b, cin : v, cout) {
-	var nab = a ! b;
-	v = (a ! nab) ! (b ! nab);
-	var nvc = v ! cin;
-	cout = nvc ! nab;
-	v = (v ! nvc) ! (cin ! nvc);
+	v = xor(cin, xor(a, b));
+	cout = or(and(a, b), and(xor(a, b), cin));
 }
 
-// 8 bit adder
 function add8(a[8], b[8] : o[8]) {
     var c = 0;
     o[7], c = add(a[7], b[7], c);
@@ -51,20 +39,17 @@ function add8(a[8], b[8] : o[8]) {
     o[0], c = add(a[0], b[0], c);
 }
 
-// returns the two's complement of the given integer
 function complement8(i[8] : o[8]) {
     o = add8(
         not(i[0]), not(i[1]), not(i[2]), not(i[3]),
         not(i[4]), not(i[5]), not(i[6]), not(i[7]),
-        1[8]);
+        0, 0, 0, 0, 0, 0, 0, 1);
 }
 
-// 8 bit subtraction
 function sub8(a[8], b[8] : o[8]) {
     o = add8(a, complement8(b));
 }
 
-// 8 bit equality
 function eq8(a[8], b[8] : out) {
     out = and(
         and(and(eq(a[1], b[1]), eq(a[2], b[2])),
@@ -73,7 +58,6 @@ function eq8(a[8], b[8] : out) {
             and(eq(a[7], b[7]), eq(a[0], b[0]))));
 }
 
-// Returns 1 if A is greater than B.
 function gr8(a[8], b[8] : out) {
 	// BEHOLD: the uggliest function ever written
 	out =
@@ -91,7 +75,24 @@ function ge8(a[8], b[8] : out) {
 	out = or(gr8(a, b), eq8(a, b));
 }
 
-// Returns the modulo of A and B.
+function divide8(a[8], b[8] : o[8]) {
+	o = 0[8];
+	while ge8(a, b) {
+		o = add8(o, 1[8]);
+		a = sub8(a, b);
+	}
+}
+
+function multiply8(a[8], b[8] : o[8]) {
+	// outputs must be initialized first.
+	o = 0[8];
+	while not(eq8(b, 0[8])) {
+		// outputs can be re-assigned.
+		o = add8(a, o);
+		b = sub8(b, 1[8]);
+	}
+}
+
 function mod8(a[8], b[8] : o[8]) {
 	o = complement8(b);
 	while ge8(a, b) {
@@ -100,33 +101,22 @@ function mod8(a[8], b[8] : o[8]) {
 	o = a;
 }
 
-// Fizzbuzz
-function fizzbuzz(v[8]) {
-	var fizz = eq8(mod8(v, 3[8]), 0[8]);
-	var buzz = eq8(mod8(v, 5[8]), 0[8]);
-	if fizz {
-		putc('F');
-		putc('i');
-		putc('z');
-		putc('z');
-	}
-	if buzz {
-		putc('B');
-		putc('u');
-		putc('z');
-		putc('z');
-	}
-	if not(or(fizz, buzz)) {
-		puti8(v);
-	}
-	endl();
-	if not(eq8(v, 255[8])) {
-		// Can use recursion.
-		fizzbuzz(add8(v, 1[8]));
-	}
+function putmany(a[8], b[8], c[8])
+{
+    puti8(a);
+    putc(' ');
+    puti8(b);
+    putc(' ');
+    puti8(c);
+    putc('\n');
 }
 
-// Entry point.
-function main() {
-	fizzbuzz(0[8]);
+function main()
+{
+    var i[8] = 0[8];
+    while not(eq8(i, 100[8])) {
+        var asdf[8] = divide8(96[8], 4[8]);
+        putmany(mod8(76[8], 7[8]), asdf, multiply8(7[8], 12[8]));
+        i = add8(i, 1[8]);
+    }
 }

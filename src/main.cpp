@@ -124,7 +124,7 @@ const char* coolstuff =
 
 int main(int argc, char **argv)
 {
-    // try {
+    try {
         std::vector<std::string> arguments;
         for (int i = 1; i < argc; ++i) {
             arguments.push_back(argv[i]);
@@ -154,11 +154,11 @@ int main(int argc, char **argv)
                 run(file, info, do_benchmark, do_optimize);
             }
         }
-    // } catch (DebugError& e) {
-    //     handleError(e);
-    // } catch (std::exception& e) {
-    //     // generic, unknown error
-    //     std::cout << "Error: " << e.what() << std::endl;
-    // }
+    } catch (DebugError& e) {
+        handleError(e);
+    } catch (std::exception& e) {
+        // generic, unknown error
+        std::cout << "Error: " << e.what() << std::endl;
+    }
     return 0;
 }
