@@ -40,7 +40,12 @@ public:
     /// * a variable is defined more than once
     /// * attempt to use an undefined variable
     /// * attempt to call an undefined function
-    void check();
+    void check() const;
+    /// Attempt to optimize functions within this state
+    /// The goal of optimizing is generally to reduce the total number of
+    /// operations performed, meaning fewer function calls, fewer
+    /// expression/statement resolutions, and fewer stack operations.
+    void optimize();
     /// Get number of values on stack
     size_t size() const;
     /// Resize the stack

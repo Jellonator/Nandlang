@@ -17,6 +17,8 @@ public:
     virtual void check(const State&) const = 0;
     /// Returns the constant-ness of this statement
     virtual ConstantLevel getConstantLevel(const State&) const = 0;
+    /// Optimize this statement
+    virtual void optimize(State& state) = 0;
 };
 
 /// Unique pointer to a statement
@@ -27,6 +29,9 @@ typedef std::unique_ptr<Statement> StatementPtr;
 /// will not be modified.
 void checkStatements(const State& state,
     const std::vector<StatementPtr>& statements);
+/// Optimize the given block of statements
+void optimizeStatements(State& state,
+    std::vector<StatementPtr>& statements);
 /// Get the constant level for the given list of statements
 ConstantLevel getStatementsConstantLevel(const State& state,
     const std::vector<StatementPtr>& statements);
@@ -41,6 +46,7 @@ public:
     void resolve(State& state) const override;
     void check(const State&) const override;
     ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
 };
 
 /// A var statement. Declares a variable.
@@ -53,6 +59,7 @@ public:
     void resolve(State& state) const override;
     void check(const State&) const override;
     ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
 };
 
 /// An if statement. Checks a condition to execute a block of statements
@@ -67,6 +74,7 @@ public:
     void resolve(State& state) const override;
     void check(const State&) const override;
     ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
 };
 
 /// A while statement. Executes a block of statements while a condition is true.
@@ -79,6 +87,7 @@ public:
     void resolve(State& state) const override;
     void check(const State&) const override;
     ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
 };
 
 /// A statement that is simply an expression
@@ -89,4 +98,5 @@ public:
     void resolve(State& state) const override;
     void check(const State&) const override;
     ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
 };

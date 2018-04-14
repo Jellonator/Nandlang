@@ -145,7 +145,7 @@ void State::parse(TokenBlock&& tokens)
     }
 }
 
-void State::check()
+void State::check() const
 {
     for (const auto& func : m_functions) {
         func.second->check(*this);
@@ -153,12 +153,20 @@ void State::check()
     if (m_functions.count("main") == 0) {
         throwErrorNoInfo("No main function has been declared");
     }
-    Function& mainfunc = getFunction("main");
+    const Function& mainfunc = getFunction("main");
     if (mainfunc.getInputNum() > 0) {
         throwErrorNoInfo("Main function should have 0 inputs");
     }
     if (mainfunc.getOutputNum() > 0) {
         throwErrorNoInfo("Main function should have 0 outputs");
+    }
+}
+
+void State::optimize()
+{
+    for (auto& func : m_functions) {
+        std::cout << func.first << " " << int(func.second->getConstantLevel(*this)) << std::endl;
+        func.second->optimize(*this);
     }
 }
 

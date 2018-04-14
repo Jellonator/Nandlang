@@ -11,7 +11,10 @@ class State;
 /// A function that can be called
 /// Has a set number of inputs and outputs
 class Function : public Debuggable {
+protected:
+    mutable size_t m_recurse;
 public:
+    Function();
     /// get number of inputs
     virtual uint64_t getInputNum() const = 0;
     /// get number of outputs
@@ -23,6 +26,10 @@ public:
     virtual void check(const State&) const = 0;
     /// Returns the constant-ness of this function
     virtual ConstantLevel getConstantLevel(const State&) const = 0;
+    /// Optimize this function
+    virtual void optimize(State& state) = 0;
+    /// Get the recursion level of this function
+    size_t getRecursion() const;
 };
 
 typedef std::unique_ptr<Function> FunctionPtr;
@@ -41,6 +48,7 @@ public:
     void call(State&) const override;
     void check(const State&) const override;
     ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
 };
 
 /// An internal Nandlang function
@@ -48,6 +56,8 @@ class FunctionInternal : public Function {
     size_t m_inputs;
     size_t m_outputs;
     std::vector<StatementPtr> m_block;
+    mutable ConstantLevel m_constant;
+    mutable bool m_hasCalculatedConstant;
 public:
     FunctionInternal(size_t inputs, size_t outputs,
                      std::vector<StatementPtr>&& block);
@@ -56,4 +66,5 @@ public:
     void call(State&) const override;
     void check(const State&) const override;
     ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
 };

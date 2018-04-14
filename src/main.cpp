@@ -75,8 +75,10 @@ void printTime(std::ostream& stream, const std::string& s, std::chrono::duration
     }
 }
 
-void run(std::istream& stream, const DebugInfo& info, bool benchmark)
+void run(std::istream& stream, const DebugInfo& info, bool benchmark,
+    bool optimize)
 {
+
     // Get time start
     auto time_start = std::chrono::system_clock::now();
     // parse characters into tokens
@@ -90,6 +92,11 @@ void run(std::istream& stream, const DebugInfo& info, bool benchmark)
     // check for integrity issues
     state.check();
     auto time_check = std::chrono::system_clock::now();
+    // optimize
+    if (optimize) {
+        state.optimize();
+    }
+    auto time_optimize = std::chrono::system_clock::now();
     // call main function
     state.getFunction("main").call(state);
     auto time_run = std::chrono::system_clock::now();
@@ -98,7 +105,10 @@ void run(std::istream& stream, const DebugInfo& info, bool benchmark)
         printTime(std::cout, "Parsing   | ", time_parse-time_start);
         printTime(std::cout, "Compiling | ", time_compile-time_parse);
         printTime(std::cout, "Checking  | ", time_check-time_compile);
-        printTime(std::cout, "Running   | ", time_run-time_check);
+        if (optimize) {
+            printTime(std::cout, "Optimize  | ", time_optimize-time_check);
+        }
+        printTime(std::cout, "Running   | ", time_run-time_optimize);
     }
 }
 
@@ -114,14 +124,15 @@ const char* coolstuff =
 
 int main(int argc, char **argv)
 {
-    try {
+    // try {
         std::vector<std::string> arguments;
         for (int i = 1; i < argc; ++i) {
             arguments.push_back(argv[i]);
         }
         ArgChain argchain(arguments);
         ArgBlock argblock = argchain.parse(1, false, {
-            {"bench", false, 'b'}
+            {"bench", false, 'b'},
+            {"no-optimize", false, 'C'}
         });
         if (argblock.size() == 0) {
             argchain.assert_finished();
@@ -129,23 +140,25 @@ int main(int argc, char **argv)
         } else {
             argchain.assert_finished();
             bool do_benchmark = argblock.has_option("bench");
+            bool do_optimize = !argblock.has_option("no-optimize");
             std::ifstream file(argblock[0]);
             if (!file.is_open()) {
                 std::cout << "Could not open file." << std::endl;
             } else {
+                // Create debug info
                 DebugInfo info;
-                info.filename = std::make_shared<std::string>(argv[1]);
+                info.filename = std::make_shared<std::string>(argblock[0]);
                 info.line = 1;
                 info.column = 1;
                 info.position = 0;
-                run(file, info, do_benchmark);
+                run(file, info, do_benchmark, do_optimize);
             }
         }
-    } catch (DebugError& e) {
-        handleError(e);
-    } catch (std::exception& e) {
-        // generic, unknown error
-        std::cout << "Error: " << e.what() << std::endl;
-    }
+    // } catch (DebugError& e) {
+    //     handleError(e);
+    // } catch (std::exception& e) {
+    //     // generic, unknown error
+    //     std::cout << "Error: " << e.what() << std::endl;
+    // }
     return 0;
 }

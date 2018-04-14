@@ -21,6 +21,45 @@ void checkExpressions(const State& state,
     }
 }
 
+void optimizeExpressions(State& state,
+    std::vector<ExpressionPtr>& expressions)
+{
+    auto iter_begin = expressions.begin();
+    auto iter = expressions.begin();
+    size_t num_used = 0;
+    size_t num_bits = 0;
+    auto insert = [&](){
+        if (num_used > 0) {
+            std::vector<bool> values;
+            for (size_t i = 0; i < num_bits; ++i) {
+                values.push_back(state.pop());
+            }
+            DebugInfo info = (*iter_begin)->getDebugInfo();
+            iter = expressions.erase(iter_begin, iter);
+            expressions.insert(iter_begin,
+                std::make_unique<ExpressionLiteralArray>(
+                    info, std::move(values)));
+            ++iter;
+        }
+        iter_begin = iter+1;
+        num_used = 0;
+    };
+    while (iter != expressions.end()) {
+        if ((*iter)->getConstantLevel(state) >= ConstantLevel::CONSTANT) {
+            ++num_used;
+            (*iter)->resolve(state);
+            num_bits += (*iter)->getOutputNum(state);
+        } else {
+            insert();
+        }
+        ++iter;
+    }
+    insert();
+    for (auto& expr : expressions) {
+        expr->optimize(state);
+    }
+}
+
 ConstantLevel getExpressionsConstantLevel(const State& state,
     const std::vector<ExpressionPtr>& expressions)
 {
@@ -74,8 +113,14 @@ void ExpressionNand::check(const State& state) const
 ConstantLevel ExpressionNand::getConstantLevel(const State& state) const
 {
     // Returns the constantness of the least-constant expression.
-    return std::min(
-        m_left->getConstantLevel(state), m_left->getConstantLevel(state));
+    return std::min({ConstantLevel::CONSTANT,
+        m_left->getConstantLevel(state), m_left->getConstantLevel(state)});
+}
+
+void ExpressionNand::optimize(State& state)
+{
+    m_left->optimize(state);
+    m_right->optimize(state);
 }
 
 ExpressionFunction::ExpressionFunction(
@@ -125,7 +170,18 @@ void ExpressionFunction::check(const State& state) const
 ConstantLevel ExpressionFunction::getConstantLevel(const State& state) const
 {
     const Function& func = state.getFunction(m_functionName);
-    return func.getConstantLevel(state);
+    ConstantLevel func_const = func.getConstantLevel(state);
+    ConstantLevel arg_const = getExpressionsConstantLevel(state, m_arguments);
+    if (func_const == ConstantLevel::LOCAL) {
+        // function only affects itself, so this expression is CONSTANT.
+        func_const = ConstantLevel::CONSTANT;
+    }
+    return std::min(func_const, arg_const);
+}
+
+void ExpressionFunction::optimize(State& state)
+{
+    optimizeExpressions(state, m_arguments);
 }
 
 ExpressionVariable::ExpressionVariable(
@@ -135,11 +191,6 @@ ExpressionVariable::ExpressionVariable(
 void ExpressionVariable::check(const State& state) const
 {
     // nothing to do
-}
-
-ConstantLevel ExpressionVariable::getConstantLevel(const State&) const
-{
-    return ConstantLevel::LOCAL;
 }
 
 void ExpressionVariable::resolve(State& state) const
@@ -152,6 +203,16 @@ uint64_t ExpressionVariable::getOutputNum(const State& state) const
     return 1;
 }
 
+ConstantLevel ExpressionVariable::getConstantLevel(const State&) const
+{
+    return ConstantLevel::LOCAL;
+}
+
+void ExpressionVariable::optimize(State& state)
+{
+    // nothing to do
+}
+
 ExpressionArray::ExpressionArray(
     const DebugInfo& info, size_t pos, size_t size)
 : Expression(info), m_pos(pos), m_size(size) {}
@@ -159,11 +220,6 @@ ExpressionArray::ExpressionArray(
 void ExpressionArray::check(const State& state) const
 {
     // nothing to do
-}
-
-ConstantLevel ExpressionArray::getConstantLevel(const State&) const
-{
-    return ConstantLevel::LOCAL;
 }
 
 void ExpressionArray::resolve(State& state) const
@@ -176,6 +232,16 @@ void ExpressionArray::resolve(State& state) const
 uint64_t ExpressionArray::getOutputNum(const State& state) const
 {
     return m_size;
+}
+
+ConstantLevel ExpressionArray::getConstantLevel(const State&) const
+{
+    return ConstantLevel::LOCAL;
+}
+
+void ExpressionArray::optimize(State& state)
+{
+    // nothing to do
 }
 
 ExpressionLiteral::ExpressionLiteral(const DebugInfo& info, bool value)
@@ -198,7 +264,12 @@ void ExpressionLiteral::check(const State& state) const
 
 ConstantLevel ExpressionLiteral::getConstantLevel(const State&) const
 {
-    return ConstantLevel::CONSTANT;
+    return ConstantLevel::LITERAL;
+}
+
+void ExpressionLiteral::optimize(State& state)
+{
+    // nothing to do
 }
 
 ExpressionLiteralArray::ExpressionLiteralArray(
@@ -224,5 +295,10 @@ void ExpressionLiteralArray::check(const State& state) const
 
 ConstantLevel ExpressionLiteralArray::getConstantLevel(const State&) const
 {
-    return ConstantLevel::CONSTANT;
+    return ConstantLevel::LITERAL;
+}
+
+void ExpressionLiteralArray::optimize(State& state)
+{
+    // nothing to do
 }

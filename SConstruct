@@ -28,7 +28,7 @@ if GetOption('gdb'):
     flags.append('-ggdb')
     vardir += '/debug'
 else:
-    flags.append('-O2')
+    flags.append('-O3')
     vardir += '/release'
 
 if GetOption('crosswin64'):

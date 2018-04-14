@@ -12,6 +12,19 @@ void checkStatements(const State& state,
     }
 }
 
+void optimizeStatements(State& state,
+    std::vector<StatementPtr>& statements)
+{
+    statements.erase(std::remove_if(statements.begin(), statements.end(),
+        [&](const StatementPtr& stmt) {
+            return stmt->getConstantLevel(state) >= ConstantLevel::CONSTANT;
+        }
+    ), statements.end());
+    for (auto& stmt : statements) {
+        stmt->optimize(state);
+    }
+}
+
 ConstantLevel getStatementsConstantLevel(const State& state,
     const std::vector<StatementPtr>& statements)
 {
@@ -69,6 +82,11 @@ ConstantLevel StatementAssign::getConstantLevel(const State& state) const
     return std::min(ret, getExpressionsConstantLevel(state, m_expressions));
 }
 
+void StatementAssign::optimize(State& state)
+{
+    optimizeExpressions(state, m_expressions);
+}
+
 StatementVariable::StatementVariable(const DebugInfo& info,
     std::vector<size_t>&& vars,
     std::vector<ExpressionPtr>&& expressions)
@@ -114,6 +132,11 @@ ConstantLevel StatementVariable::getConstantLevel(const State& state) const
         }
     }
     return std::min(ret, getExpressionsConstantLevel(state, m_expressions));
+}
+
+void StatementVariable::optimize(State& state)
+{
+    optimizeExpressions(state, m_expressions);
 }
 
 StatementIf::StatementIf(const DebugInfo& info, ExpressionPtr cond,
@@ -163,6 +186,19 @@ ConstantLevel StatementIf::getConstantLevel(const State& state) const
         m_condition->getConstantLevel(state)});
 }
 
+void StatementIf::optimize(State& state)
+{
+    if (m_condition->getConstantLevel(state) == ConstantLevel::CONSTANT) {
+        m_condition->resolve(state);
+        m_condition = std::move(std::make_unique<ExpressionLiteral>(
+            m_condition->getDebugInfo(), state.pop()));
+    } else {
+        m_condition->optimize(state);
+    }
+    optimizeStatements(state, m_block);
+    optimizeStatements(state, m_else);
+}
+
 StatementWhile::StatementWhile(const DebugInfo& info, ExpressionPtr cond,
     std::vector<StatementPtr>&& block)
 : Statement(info)
@@ -204,6 +240,18 @@ ConstantLevel StatementWhile::getConstantLevel(const State& state) const
         m_condition->getConstantLevel(state));
 }
 
+void StatementWhile::optimize(State& state)
+{
+    if (m_condition->getConstantLevel(state) == ConstantLevel::CONSTANT) {
+        m_condition->resolve(state);
+        m_condition = std::move(std::make_unique<ExpressionLiteral>(
+            m_condition->getDebugInfo(), state.pop()));
+    } else {
+        m_condition->optimize(state);
+    }
+    optimizeStatements(state, m_block);
+}
+
 StatementExpression::StatementExpression(
     ExpressionPtr&& expr)
 : Statement(expr->getDebugInfo())
@@ -227,4 +275,9 @@ void StatementExpression::check(const State& state) const
 ConstantLevel StatementExpression::getConstantLevel(const State& state) const
 {
     return m_expression->getConstantLevel(state);
+}
+
+void StatementExpression::optimize(State& state)
+{
+    m_expression->optimize(state);
 }

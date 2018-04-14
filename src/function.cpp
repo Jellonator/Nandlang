@@ -3,12 +3,17 @@
 #include <set>
 #include <sstream>
 
+Function::Function() : m_recurse(0) {}
+
 FunctionExternal::FunctionExternal(std::function<void(State&)> func,
     uint64_t inputs, uint64_t outputs, ConstantLevel constant)
-: m_inputNum(inputs)
-, m_outputNum(outputs)
-, m_function(func)
+: Function(), m_inputNum(inputs), m_outputNum(outputs), m_function(func)
 , m_constant(constant) {}
+
+size_t Function::getRecursion() const
+{
+    return m_recurse;
+}
 
 uint64_t FunctionExternal::getInputNum() const
 {
@@ -35,10 +40,16 @@ ConstantLevel FunctionExternal::getConstantLevel(const State&) const
     return m_constant;
 }
 
+void FunctionExternal::optimize(State& state)
+{
+    // nothing to do
+}
+
 FunctionInternal::FunctionInternal(
     size_t inputs, size_t outputs,
     std::vector<StatementPtr>&& block)
-: m_inputs(inputs), m_outputs(outputs), m_block(std::move(block)) {}
+: Function(), m_inputs(inputs), m_outputs(outputs), m_block(std::move(block))
+, m_hasCalculatedConstant(false) {}
 
 uint64_t FunctionInternal::getInputNum() const
 {
@@ -88,5 +99,21 @@ void FunctionInternal::check(const State& state) const
 
 ConstantLevel FunctionInternal::getConstantLevel(const State& state) const
 {
-    return getStatementsConstantLevel(state, m_block);
+    if (m_hasCalculatedConstant) {
+        return m_constant;
+    }
+    if (m_recurse) {
+        // Recursive function can not be optimized
+        return ConstantLevel::GLOBAL;
+    }
+    ++ m_recurse;
+    auto ret = getStatementsConstantLevel(state, m_block);
+    -- m_recurse;
+    m_constant = ret;
+    return ret;
+}
+
+void FunctionInternal::optimize(State& state)
+{
+    optimizeStatements(state, m_block);
 }
