@@ -13,7 +13,12 @@ class Function;
 /// GLOBAL means that this expression affects or is affected by the global state
 /// LOCAL means that this expression affects or is affected the local state
 /// CONSTANT means that this is a fully constant expression.
+/// This allows for the following opimization rules:
+///     * LOCAL functions can be pre-calculated
+///     * CONSTANT expressions can be pre-calculated
+///     * CONSTANT statements can be removed
 enum class ConstantLevel {
+    // Order matters. The lower in this list, the more 'constant' it is.
     GLOBAL,
     LOCAL,
     CONSTANT
@@ -32,9 +37,8 @@ public:
     /// Throws an exception on failure. First argument is the execution state,
     /// and the second argument is a set of variable names.
     virtual void check(const State&) const = 0;
-    /// Returns true if this is a constant expression; That is, the expression
-    /// is not affected by nor alters any state.
-    // virtual ConstantLevel isConstantExpression(State&) const = 0;
+    /// Returns the constant-ness of this expression
+    virtual ConstantLevel getConstantLevel(const State&) const = 0;
 };
 
 typedef std::unique_ptr<Expression> ExpressionPtr;
@@ -47,6 +51,9 @@ size_t countOutputs(const State& state,
 /// Apply the check function for all of the given expressions
 void checkExpressions(const State& state,
     const std::vector<ExpressionPtr>& expressions);
+/// Get the constantness of the given expression list
+ConstantLevel getExpressionsConstantLevel(const State& state,
+    const std::vector<ExpressionPtr>& expressions);
 
 /// A NAND expression. NANDS two values together
 class ExpressionNand : public Expression {
@@ -57,7 +64,7 @@ public:
     void resolve(State&) const override;
     uint64_t getOutputNum(const State&) const override;
     void check(const State&) const override;
-    // ConstantLevel isConstantExpression(State&) const = 0;
+    ConstantLevel getConstantLevel(const State&) const override;
 };
 
 /// A function expression. Calls a function when evaluated
@@ -73,6 +80,7 @@ public:
     void resolve(State&) const override;
     uint64_t getOutputNum(const State&) const override;
     void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
 };
 
 /// A variable expression. Represents a variable
@@ -83,6 +91,7 @@ public:
     void resolve(State&) const override;
     uint64_t getOutputNum(const State&) const override;
     void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
 };
 
 /// A variable expression. Represents a variable
@@ -94,6 +103,7 @@ public:
     void resolve(State&) const override;
     uint64_t getOutputNum(const State&) const override;
     void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
 };
 
 /// A literal expression
@@ -104,6 +114,7 @@ public:
     void resolve(State&) const override;
     uint64_t getOutputNum(const State&) const override;
     void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
 };
 
 /// A literal array expression
@@ -115,4 +126,5 @@ public:
     void resolve(State&) const override;
     uint64_t getOutputNum(const State&) const override;
     void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
 };

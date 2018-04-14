@@ -59,12 +59,12 @@ void fn_iogood(State& state) {
 }
 
 const std::map<std::string, FunctionExternal> stdlib = {
-    {"putb",   {fn_putb,   1, 0}},
-    {"puti8",  {fn_puti8,  8, 0}},
-    {"endl",   {fn_endl,   0, 0}},
-    {"putc",   {fn_putc,   8, 0}},
-    {"getc",   {fn_getc,   0, 8}},
-    {"iogood", {fn_iogood, 0, 1}}
+    {"putb",   {fn_putb,   1, 0, ConstantLevel::GLOBAL}},
+    {"puti8",  {fn_puti8,  8, 0, ConstantLevel::GLOBAL}},
+    {"endl",   {fn_endl,   0, 0, ConstantLevel::GLOBAL}},
+    {"putc",   {fn_putc,   8, 0, ConstantLevel::GLOBAL}},
+    {"getc",   {fn_getc,   0, 8, ConstantLevel::GLOBAL}},
+    {"iogood", {fn_iogood, 0, 1, ConstantLevel::GLOBAL}}
 };
 
 State::State()

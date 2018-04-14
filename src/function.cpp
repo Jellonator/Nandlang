@@ -3,12 +3,12 @@
 #include <set>
 #include <sstream>
 
-FunctionExternal::FunctionExternal(
-    std::function<void(State&)> func,
-    uint64_t inputs, uint64_t outputs)
+FunctionExternal::FunctionExternal(std::function<void(State&)> func,
+    uint64_t inputs, uint64_t outputs, ConstantLevel constant)
 : m_inputNum(inputs)
 , m_outputNum(outputs)
-, m_function(func) {}
+, m_function(func)
+, m_constant(constant) {}
 
 uint64_t FunctionExternal::getInputNum() const
 {
@@ -28,6 +28,11 @@ void FunctionExternal::call(State& state) const
 void FunctionExternal::check(const State& state) const
 {
     // nothing to do
+}
+
+ConstantLevel FunctionExternal::getConstantLevel(const State&) const
+{
+    return m_constant;
 }
 
 FunctionInternal::FunctionInternal(
@@ -79,4 +84,9 @@ void FunctionInternal::call(State& state) const
 void FunctionInternal::check(const State& state) const
 {
     checkStatements(state, m_block);
+}
+
+ConstantLevel FunctionInternal::getConstantLevel(const State& state) const
+{
+    return getStatementsConstantLevel(state, m_block);
 }

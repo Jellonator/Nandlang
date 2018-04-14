@@ -21,6 +21,8 @@ public:
     /// Check the function to ensure consistency and integrity.
     /// Throws an exception on failure.
     virtual void check(const State&) const = 0;
+    /// Returns the constant-ness of this function
+    virtual ConstantLevel getConstantLevel(const State&) const = 0;
 };
 
 typedef std::unique_ptr<Function> FunctionPtr;
@@ -30,13 +32,15 @@ class FunctionExternal : public Function {
     uint64_t m_inputNum;
     uint64_t m_outputNum;
     std::function<void(State&)> m_function;
+    ConstantLevel m_constant;
 public:
     FunctionExternal(std::function<void(State&)> func,
-                     uint64_t inputs, uint64_t outputs);
+                     uint64_t inputs, uint64_t outputs, ConstantLevel constant);
     uint64_t getInputNum() const override;
     uint64_t getOutputNum() const override;
     void call(State&) const override;
     void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
 };
 
 /// An internal Nandlang function
@@ -51,4 +55,5 @@ public:
     uint64_t getOutputNum() const override;
     void call(State&) const override;
     void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
 };

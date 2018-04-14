@@ -21,6 +21,19 @@ void checkExpressions(const State& state,
     }
 }
 
+ConstantLevel getExpressionsConstantLevel(const State& state,
+    const std::vector<ExpressionPtr>& expressions)
+{
+    ConstantLevel ret = ConstantLevel::CONSTANT;
+    for (const auto& expr : expressions) {
+        ret = std::min(ret, expr->getConstantLevel(state));
+        if (ret == ConstantLevel::GLOBAL) {
+            break;
+        }
+    }
+    return ret;
+}
+
 Expression::Expression(const DebugInfo& info) : Debuggable(info) {}
 
 ExpressionNand::ExpressionNand(
@@ -56,6 +69,13 @@ void ExpressionNand::check(const State& state) const
         s << "Right operand to NAND operator should have 1 output.";
         throwError(s.str());
     }
+}
+
+ConstantLevel ExpressionNand::getConstantLevel(const State& state) const
+{
+    // Returns the constantness of the least-constant expression.
+    return std::min(
+        m_left->getConstantLevel(state), m_left->getConstantLevel(state));
 }
 
 ExpressionFunction::ExpressionFunction(
@@ -102,6 +122,12 @@ void ExpressionFunction::check(const State& state) const
     // Do NOT check func here because functions are already checked by State
 }
 
+ConstantLevel ExpressionFunction::getConstantLevel(const State& state) const
+{
+    const Function& func = state.getFunction(m_functionName);
+    return func.getConstantLevel(state);
+}
+
 ExpressionVariable::ExpressionVariable(
     const DebugInfo& info, size_t pos)
 : Expression(info), m_pos(pos) {}
@@ -109,6 +135,11 @@ ExpressionVariable::ExpressionVariable(
 void ExpressionVariable::check(const State& state) const
 {
     // nothing to do
+}
+
+ConstantLevel ExpressionVariable::getConstantLevel(const State&) const
+{
+    return ConstantLevel::LOCAL;
 }
 
 void ExpressionVariable::resolve(State& state) const
@@ -128,6 +159,11 @@ ExpressionArray::ExpressionArray(
 void ExpressionArray::check(const State& state) const
 {
     // nothing to do
+}
+
+ConstantLevel ExpressionArray::getConstantLevel(const State&) const
+{
+    return ConstantLevel::LOCAL;
 }
 
 void ExpressionArray::resolve(State& state) const
@@ -160,6 +196,11 @@ void ExpressionLiteral::check(const State& state) const
     // nothing to do
 }
 
+ConstantLevel ExpressionLiteral::getConstantLevel(const State&) const
+{
+    return ConstantLevel::CONSTANT;
+}
+
 ExpressionLiteralArray::ExpressionLiteralArray(
     const DebugInfo& info, std::vector<bool>&& values)
 : Expression(info), m_values(std::move(values)) {}
@@ -179,4 +220,9 @@ uint64_t ExpressionLiteralArray::getOutputNum(const State& state) const
 void ExpressionLiteralArray::check(const State& state) const
 {
     // nothing to do
+}
+
+ConstantLevel ExpressionLiteralArray::getConstantLevel(const State&) const
+{
+    return ConstantLevel::CONSTANT;
 }

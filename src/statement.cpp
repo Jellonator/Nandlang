@@ -2,6 +2,7 @@
 #include "state.h"
 #include <stdexcept>
 #include <sstream>
+#include <algorithm>
 
 void checkStatements(const State& state,
     const std::vector<StatementPtr>& statements)
@@ -9,6 +10,19 @@ void checkStatements(const State& state,
     for (const auto& stmt : statements) {
         stmt->check(state);
     }
+}
+
+ConstantLevel getStatementsConstantLevel(const State& state,
+    const std::vector<StatementPtr>& statements)
+{
+    ConstantLevel ret = ConstantLevel::CONSTANT;
+    for (const auto& stmt : statements) {
+        ret = std::min(ret, stmt->getConstantLevel(state));
+        if (ret == ConstantLevel::GLOBAL) {
+            break;
+        }
+    }
+    return ret;
 }
 
 Statement::Statement(const DebugInfo& info) : Debuggable(info) {}
@@ -41,6 +55,18 @@ void StatementAssign::check(const State& state) const
         s << "Not enough outputs for assignment.";
         throwError(s.str());
     }
+}
+
+ConstantLevel StatementAssign::getConstantLevel(const State& state) const
+{
+    ConstantLevel ret = ConstantLevel::CONSTANT;
+    for (size_t pos : m_variables) {
+        if (pos != ignorePosition) {
+            ret = ConstantLevel::LOCAL;
+            break;
+        }
+    }
+    return std::min(ret, getExpressionsConstantLevel(state, m_expressions));
 }
 
 StatementVariable::StatementVariable(const DebugInfo& info,
@@ -76,6 +102,18 @@ void StatementVariable::check(const State& state) const
         s << "Not enough outputs for variables.";
         throwError(s.str());
     }
+}
+
+ConstantLevel StatementVariable::getConstantLevel(const State& state) const
+{
+    ConstantLevel ret = ConstantLevel::CONSTANT;
+    for (size_t pos : m_variables) {
+        if (pos != ignorePosition) {
+            ret = ConstantLevel::LOCAL;
+            break;
+        }
+    }
+    return std::min(ret, getExpressionsConstantLevel(state, m_expressions));
 }
 
 StatementIf::StatementIf(const DebugInfo& info, ExpressionPtr cond,
@@ -117,6 +155,14 @@ void StatementIf::check(const State& state) const
     checkStatements(state, m_else);
 }
 
+ConstantLevel StatementIf::getConstantLevel(const State& state) const
+{
+    return std::min({
+        getStatementsConstantLevel(state, m_block),
+        getStatementsConstantLevel(state, m_else),
+        m_condition->getConstantLevel(state)});
+}
+
 StatementWhile::StatementWhile(const DebugInfo& info, ExpressionPtr cond,
     std::vector<StatementPtr>&& block)
 : Statement(info)
@@ -151,6 +197,13 @@ void StatementWhile::check(const State& state) const
     checkStatements(state, m_block);
 }
 
+ConstantLevel StatementWhile::getConstantLevel(const State& state) const
+{
+    return std::min(
+        getStatementsConstantLevel(state, m_block),
+        m_condition->getConstantLevel(state));
+}
+
 StatementExpression::StatementExpression(
     ExpressionPtr&& expr)
 : Statement(expr->getDebugInfo())
@@ -169,4 +222,9 @@ void StatementExpression::check(const State& state) const
         s << "Unhandled outputs from expression.";
         throwError(s.str());
     }
+}
+
+ConstantLevel StatementExpression::getConstantLevel(const State& state) const
+{
+    return m_expression->getConstantLevel(state);
 }
