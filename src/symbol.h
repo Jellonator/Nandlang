@@ -15,6 +15,10 @@ enum class Symbol {
 extern const std::string ignoreIdentifier;
 /// The variable position of an ignored variable
 extern const size_t ignorePosition;
+/// index name of pointer
+extern const std::string pointerIdentifier;
+/// Size of a pointer
+extern const size_t pointerSize;
 /// Maps single character symbols to Symbol values
 extern const std::map<char, Symbol> symbolMap;
 /// Maps keyword identifiers to Symbol values

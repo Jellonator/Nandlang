@@ -18,4 +18,4 @@ sources = [
 ]
 
 # Create program
-program = env.Program(target=target, source=sources, LINKFLAGS=['-static'])
+program = env.Program(target=target, source=sources)

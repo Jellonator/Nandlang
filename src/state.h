@@ -50,4 +50,39 @@ public:
     size_t size() const;
     /// Resize the stack
     void resize(size_t);
+    /// Get an integer value
+    template <class T>
+    T popValue();
+    /// Put an integer value
+    template <class T>
+    void pushValue(T value);
 };
+
+template <class T>
+T State::popValue()
+{
+    static const size_t bitsize = 8 * sizeof (T);
+    static const T bitmask = T(1) << T(bitsize - 1);
+    T value(0);
+    for (size_t i = 0; i < bitsize; ++i) {
+        value >>= 1;
+        if (pop()) {
+            value += bitmask;
+        }
+    }
+    return value;
+}
+
+template <class T>
+void State::pushValue(T value)
+{
+    static const size_t bitsize = 8 * sizeof (T);
+    static const T bitmask = T(1) << T(bitsize - 1);
+    for (size_t i = 0; i < bitsize; ++i) {
+        // Most significant bit comes first, since this language behaves in
+        // a big-endian way.
+        bool b = value & bitmask;
+        value <<= 1;
+        push(b);
+    }
+}

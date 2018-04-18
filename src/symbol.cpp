@@ -2,8 +2,12 @@
 #include <limits>
 
 const std::string ignoreIdentifier = "_";
-
 const size_t ignorePosition = std::numeric_limits<size_t>::max();
+
+const std::string pointerIdentifier = "ptr";
+/// Size of a pointer is the bits of the system (typically 32 or 64) + an extra
+/// byte to identify individual bits
+const size_t pointerSize = 8 * (sizeof(size_t));
 
 const std::map<char, Symbol> symbolMap = {
     {',', Symbol::COMMA},

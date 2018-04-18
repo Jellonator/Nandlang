@@ -14,6 +14,9 @@ const char INDEX_END = ']';
 size_t strToNumber(const std::string& str, const std::string& err,
     const DebugInfo& info)
 {
+    if (str == pointerIdentifier) {
+        return pointerSize;
+    }
     size_t value;
     std::stringstream indexstream(str);
     indexstream >> value;
@@ -128,18 +131,12 @@ void parseIndex(std::istream& stream, TokenBlock& block, DebugInfo& context)
                 context.line += 1;
                 context.column = 1;
             }
-        } else if (std::isdigit(c)) {
+        } else if (std::isprint(c)) {
             indexstring += c;
         } else  {
             std::stringstream s;
-            s << "Unexpected character ";
-            if (std::isprint(c)) {
-                s << c;
-            } else {
-                s << "0x" << std::hex << std::setw(2)
-                  << std::setfill('0') << std::uppercase << int(c);
-            }
-            s << " in index";
+            s << "Unexpected character " << "0x" << std::hex << std::setw(2)
+              << std::setfill('0') << std::uppercase << int(c) << " in index";
             throwError(info, s.str());
         }
     }

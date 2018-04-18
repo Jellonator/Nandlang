@@ -4,9 +4,10 @@ import os
 # https://github.com/swarminglogic/scons-x-compile, which allows for cross
 # compiling for Windows from Linux.
 
-# Create environment
-env = Environment()
+# Create variables
 flags = ['-std=c++14', '-Wall']
+linkflags = ['-static']
+cxx = "g++"
 
 # Create --crosswin64 option
 AddOption('--crosswin64',
@@ -29,18 +30,18 @@ if GetOption('gdb'):
     vardir += '/debug'
 else:
     flags.append('-O3')
+    linkflags.append('-s')
     vardir += '/release'
-
 if GetOption('crosswin64'):
-    env['CXX'] = 'x86_64-w64-mingw32-g++'
+    cxx = 'x86_64-w64-mingw32-g++'
     target = '../../../nandlang.exe'
     vardir += '/win64'
 else:
     target = '../../../nandlang'
     vardir += '/linux'
 
-env.MergeFlags(flags);
-print(target);
+# Create environment
+env = Environment(CXX=cxx, LINKFLAGS=linkflags, CXXFLAGS=flags)
 
 # highlighting in terminal
 env['ENV']['TERM'] = os.environ['TERM']

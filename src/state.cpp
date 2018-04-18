@@ -18,25 +18,13 @@ void fn_endl(State& state)
 
 /// Put 8-bit integer function
 void fn_puti8(State& state) {
-    uint8_t value(0);
-    for (size_t i = 0; i < 8; ++i) {
-        value >>= 1;
-        if (state.pop()) {
-            value += 0x80;
-        }
-    }
+    uint8_t value = state.popValue<uint8_t>();
     std::cout << int(value);
 }
 
 /// Put character function
 void fn_putc(State& state) {
-    uint8_t value(0);
-    for (size_t i = 0; i < 8; ++i) {
-        value >>= 1;
-        if (state.pop()) {
-            value += 0x80;
-        }
-    }
+    uint8_t value = state.popValue<uint8_t>();
     std::cout << value;
 }
 
@@ -44,18 +32,45 @@ void fn_putc(State& state) {
 void fn_getc(State& state) {
     char c;
     std::cin.get(c);
-    for (size_t i = 0; i < 8; ++i) {
-        // Most significant bit comes first, since this language behaves in
-        // a big-endian way.
-        bool b = c & 0x80;
-        c <<= 1;
-        state.push(b);
-    }
+    state.pushValue<char>(c);
 }
 
 /// Gets whether or not std::cin is able to be read
 void fn_iogood(State& state) {
     state.push(bool(std::cin));
+}
+
+/// Allocate memory
+/// A pointer is sizeof(size_t) bytes in length
+void fn_malloc(State& state) {
+    // I know that using one byte per bit is hugely inefficient, but for a
+    // non-serious language I'm sure it's okay.
+    size_t size = state.popValue<size_t>();
+    void *ptr = malloc(size);
+    std::cout << ptr << std::endl;
+    state.pushValue(size_t(ptr));
+}
+
+/// Deallocate memory
+void fn_free(State& state) {
+    size_t pos = state.popValue<size_t>();
+    void *ptr = (void*)(pos);
+    free(ptr);
+}
+
+/// Dereference memory
+void fn_deref(State& state) {
+    size_t pos = state.popValue<size_t>();
+    uint8_t *ptr = (uint8_t*)(pos);
+    state.push(*ptr);
+}
+
+/// Assign memory
+void fn_assign(State& state) {
+    bool value = state.pop();
+    size_t pos = state.popValue<size_t>();
+    uint8_t *ptr = (uint8_t*)(pos);
+    *ptr = value;
 }
 
 const std::map<std::string, FunctionExternal> stdlib = {
@@ -64,7 +79,11 @@ const std::map<std::string, FunctionExternal> stdlib = {
     {"endl",   {fn_endl,   0, 0, ConstantLevel::GLOBAL}},
     {"putc",   {fn_putc,   8, 0, ConstantLevel::GLOBAL}},
     {"getc",   {fn_getc,   0, 8, ConstantLevel::GLOBAL}},
-    {"iogood", {fn_iogood, 0, 1, ConstantLevel::GLOBAL}}
+    {"iogood", {fn_iogood, 0, 1, ConstantLevel::GLOBAL}},
+    {"malloc", {fn_malloc, pointerSize, pointerSize, ConstantLevel::LOCAL}},
+    {"free",   {fn_free,   pointerSize, 0, ConstantLevel::LOCAL}},
+    {"deref",  {fn_deref,  pointerSize, 1, ConstantLevel::LOCAL}},
+    {"assign", {fn_assign, pointerSize+1, 0, ConstantLevel::LOCAL}}
 };
 
 State::State()
