@@ -187,4 +187,6 @@ function main()
     }
     _[ptr], _[ptr] = run(mem, program, 0[ptr], 0[ptr]);
     endl();
+    free(mem);
+    free(program);
 }

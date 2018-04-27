@@ -303,6 +303,72 @@ foo[1], _[6], foo[2] = foo;
 It should be noted that arrays in Nandlang are really just syntactic sugar.
 There is no difference between declaring `b[4]` and `b0, b1, b2, b3`.
 
+A special size exists called `[ptr]` which represents the system's pointer size.
+On 32 bit systems `[ptr]` is equivalent to `[32]`, and on 64 bit systems `[64]`
+is equivalent `[64]`.
+
+### For statements
+A for statement can be used to shorten long, repetitive code and is necessary
+for operating on pointer types. A for statement essentially breaks a value up
+into multiple smaller types.
+
+The syntax for a for statement is as such:
+
+```Javascript
+for (name1, :name2[8], name3[16]) {
+    ...
+}
+```
+
+A for statement can have any number of names, and each name in the list can have
+any size. Each name in the list of names must match an existing variable name,
+and the size of the variable must be divisible by the size given in the
+for loop's list of names. If a name begins with a colon, then it will be
+iterated in reverse order. The number of iterations for each name should match.
+
+Here is an example for outputing a number as binary:
+
+```Javascript
+function putb8(input) {
+    for (input) {
+        putb(input);
+    }
+}
+```
+
+Here is another example for NANDing two variables together:
+```Javascript
+function nand8(a[8], b[8] : o[8]) {
+    for (a, b, o) {
+        o = a!b;
+    }
+}
+```
+
+Using for loops is also useful for addition. Here is an example addptr function
+for adding two pointers together:
+
+```Javascript
+function add(a, b, cin : v, cout) {
+    var nab = a ! b;
+    v = (a ! nab) ! (b ! nab);
+    var nvc = v ! cin;
+    cout = nvc ! nab;
+    v = (v ! nvc) ! (cin ! nvc);
+}
+
+function addptr(a[ptr], b[ptr] : o[ptr]) {
+    var c = 0;
+    for (:a, :b, :o) {
+        o, c = add(a, b, c);
+    }
+}
+```
+
+Unlike previous examples, the iteration is performed in reverse order. This is
+because the carry bit must carry from the least significant bit to the most
+significant bit.
+
 ## Standard library
 The Nandlang standard library defines many functions, mostly for I/O.
 
@@ -358,6 +424,40 @@ while iogood() {
 }
 // Prints anything that the user inputs until the standard input can no longer
 // be read.
+```
+
+### malloc
+Allocates memory. The input is a pointer sized number specifying the number of
+bits to allocate in dynamic memory. It outputs a pointer pointing to a memory
+location that can contain the given number of bits. A pointer should be freed
+later.
+
+```Javascript
+var memory[ptr] = malloc(64[ptr]);
+```
+
+### assign
+Assign a value to a pointer. It takes a pointer and a bit and assigns the
+pointer to the value.
+
+```Javascript
+assign(memory, 1);
+```
+
+### deref
+Dereferences a pointer. It takes a pointer and returns a bit indicating the bit
+value at that pointer.
+
+```Javascript
+var value = deref(memory);
+```
+
+### free
+Frees the memory at the given pointer. Should be used whenever memory allocated
+with malloc is no longer needed or owned.
+
+```Javascript
+free(memory);
 ```
 
 ## Example Fibonacci program

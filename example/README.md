@@ -16,6 +16,9 @@ prints that string but reversed (which is why an array is required).
 ## basic.nand
 Demonstrates basic variable assignment and output.
 
+## bf.nand
+A BrainF#$! intepreter. Uses for loops, recursion, and memory management.
+
 ## fibonacci.nand
 Prints out the Fibonacci sequence. Demonstrates recursive functions.
 
@@ -35,4 +38,4 @@ modulo, multiplication, and addition.
 
 ## stacktest.md
 Simple test that I use to make sure I didn't mess up any stack code while
-programming. 
+programming.
