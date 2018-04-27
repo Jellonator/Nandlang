@@ -16,8 +16,9 @@ statement  ::= ifstmt | whilestmt | varstmt | expr ';'
 ifstmt     ::= 'if' expr block {'else' block}
 whilestmt  ::= 'while' expr block
 varstmt    ::= {'var'} idlist '=' exprlist ';'
+forstmt    ::= 'for' '(' ':' identifier {',' ':' identifier } ')' block
 identifier ::= (alphabetic character | '_') {alphanumeric character | '_'} [index]
-index      ::= '[' digit { digit } ']'
+index      ::= '[' digit { digit } ']' | 'ptr'
 ```
 
 alphabetic character is any character that is true for std::isalpha, digit is
