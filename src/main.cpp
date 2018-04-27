@@ -120,7 +120,14 @@ const char* coolstuff =
 "!!  !! !!!!  !!   !!  !! !!!!  !!   !!  !!       !!   !!  !! !!!!  !!   !!  !!\n"
 "    !!  !!!  !!   !!  !!  !!!  !!  !!   !!       !!   !!  !!  !!!  !!!!!!!    \n"
 "!!  !!   !!  !!   !!  !!   !!  !!!!!    !!!!!!!  !!   !!  !!   !!   !!! !!  !!\n"
-"Nandlang v1.2, An esoteric programming language based on NAND completeness";
+"Nandlang v1.2, An esoteric programming language based on NAND completeness\n"
+"\n"
+"Usage:\n"
+"    nandlang path_to_script.nand [--bench] [--no-optimize]\n"
+"\n"
+"Flags:\n"
+"    -C, --no-optimize  Do not optimize the program before running\n"
+"    -b, --bench        Output benchmark information after executing script";
 
 int main(int argc, char **argv)
 {
