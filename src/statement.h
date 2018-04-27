@@ -100,3 +100,29 @@ public:
     ConstantLevel getConstantLevel(const State&) const override;
     void optimize(State& state) override;
 };
+
+/// Represents a single variable in a For statement
+// Generally behaves like this:
+// position = begin + i*step + j
+// where 0 <= i < StatementFor::m_iterations
+// and   0 <= j < size
+struct ForData {
+    size_t begin;   // starting position to read/write each value
+    size_t size;    // size of each variable
+    ptrdiff_t step; // position difference for each iteration
+};
+
+/// For loop statement
+class StatementFor : public Statement {
+    size_t m_iterations;
+    size_t m_size;
+    std::vector<ForData> m_fordata;
+    std::vector<StatementPtr> m_block;
+public:
+    StatementFor(const DebugInfo& debug, size_t iterations,
+        std::vector<ForData>&& fordata, std::vector<StatementPtr> block);
+    void resolve(State& state) const override;
+    void check(const State&) const override;
+    ConstantLevel getConstantLevel(const State&) const override;
+    void optimize(State& state) override;
+};

@@ -24,7 +24,8 @@ const std::map<std::string, Symbol> keywordMap = {
     {"while",    Symbol::WHILE},
     {"if",       Symbol::IF},
     {"var",      Symbol::VAR},
-    {"else",      Symbol::ELSE}
+    {"else",     Symbol::ELSE},
+    {"for",      Symbol::FOR}
 };
 
 const std::map<Symbol, char> symbolBlocks = {
@@ -107,6 +108,7 @@ std::ostream& operator<<(std::ostream& stream, const Symbol& symbol)
         case Symbol::INDEX:       stream << "index";           break;
         case Symbol::WHILE:       stream << "while";           break;
         case Symbol::ELSE:        stream << "else";            break;
+        case Symbol::FOR:         stream << "for";             break;
         case Symbol::VAR:         stream << "var";             break;
         case Symbol::IF:          stream << "if";              break;
     }
@@ -147,12 +149,13 @@ void printBlock(const TokenBlock& block)
             std::cout << "[" << t.getValue() << "]";
             break;
         case Symbol::IDENTIFIER: std::cout << t.getIdentifier() << " "; break;
-        case Symbol::LINESEP:    std::cout << ";" << std::endl; break;
-        case Symbol::LITERAL:    std::cout << t.getValue();     break;
+        case Symbol::LINESEP:    std::cout << ";" << std::endl;         break;
+        case Symbol::LITERAL:    std::cout << t.getValue() << " ";      break;
         case Symbol::FUNCTION:   std::cout << "function "; break;
         case Symbol::WHILE:      std::cout << "while ";    break;
         case Symbol::NONE:       std::cout << "ERROR";     break;
-        case Symbol::ELSE:       std::cout << "else";     break;
+        case Symbol::ELSE:       std::cout << "else";      break;
+        case Symbol::FOR:        std::cout << "for";       break;
         case Symbol::VAR:        std::cout << "var ";      break;
         case Symbol::IF:         std::cout << "if ";       break;
         case Symbol::COMMA:      std::cout << ","; break;

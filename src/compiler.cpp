@@ -430,12 +430,101 @@ StatementPtr parseStatementAssign(TokenTaker& tokens, NameStack& names)
     }
 }
 
+struct NumIterationResult {
+    size_t pos;
+    size_t size;
+    size_t num_iterations;
+    Token token;
+    bool reverse;
+};
+
+NumIterationResult getNumIterations(const NameStack& names, Token&& token, size_t size)
+{
+    if (!names.isNameDefined(token.getIdentifier())) {
+        std::stringstream s;
+        s << "Identifier " << token.getIdentifier() << " is not defined";
+        token.throwError(s.str());
+    }
+    NameStackDef def = names.getPosition(token);
+    if (def.size % size != 0) {
+        std::stringstream s;
+        s << "Size " << size << " does not fit evenly into " << def.size;
+        token.throwError(s.str());
+    }
+    return {def.pos, size, def.size / size, std::move(token), false};
+}
+
+StatementPtr parseFor(TokenTaker& tokens, NameStack& names)
+{
+    Token first = tokens.pop();
+    auto token_namelist = tokens.pop();
+    assertToken(token_namelist, Symbol::PARENTHESIS);
+    auto token_block = tokens.pop();
+    assertToken(token_block, Symbol::BLOCK);
+    std::vector<NumIterationResult> iternames;
+    auto nametaker = TokenTaker(std::move(token_namelist.takeBlock()));
+    size_t expected_iter = 0;
+    splitMultiple(nametaker, Symbol::COMMA, false, [&](auto tokens) {
+        // inputs are comma delimited
+        bool reverse = false;
+        assertNotEmpty(tokens, "identifier");
+        if (tokens.peek() == Symbol::IOSEP) {
+            tokens.pop();
+            reverse = true;
+        }
+        Token t = tokens.pop();
+        assertToken(t, Symbol::IDENTIFIER);
+        std::string name = t.getIdentifier();
+        size_t size = 1;
+        if (tokens.peek() == Symbol::INDEX) {
+            Token tokenIndex = tokens.pop();
+            size = tokenIndex.getValue();
+        }
+        assertEmpty(tokens);
+        auto result = getNumIterations(names, std::move(t), size);
+        if (expected_iter && expected_iter != result.num_iterations) {
+            std::stringstream s;
+            s << "Mismatched number of iterations; expected "
+              << expected_iter << ", got " << result.num_iterations;
+            result.token.throwError(s.str());
+        } else {
+            expected_iter = result.num_iterations;
+        }
+        result.reverse = reverse;
+        iternames.push_back(result);
+    });
+    if (iternames.empty()) {
+        token_namelist.throwError("Empty capture list");
+    }
+    // block
+    std::vector<ForData> fordata;
+    NameStack subnames(names);
+    for (const auto& iter : iternames) {
+        subnames.removeName(iter.token.getIdentifier());
+        subnames.insertIndexed(iter.token, iter.size);
+        ForData data = {iter.pos, iter.size, ptrdiff_t(iter.size)};
+        if (iter.reverse) {
+            // if reversed, then beginning is last set of bits in variable and
+            // reverse the step
+            data.begin = iter.pos + iter.size * (expected_iter-1);
+            data.step = -data.step;
+        }
+        fordata.push_back(std::move(data));
+    }
+    TokenTaker blocktaker(std::move(token_block.takeBlock()));
+    std::vector<StatementPtr> block = parseBlock(blocktaker, subnames);
+    return std::make_unique<StatementFor>(
+        first.getDebugInfo(), expected_iter, std::move(fordata), std::move(block));
+}
+
 StatementPtr parseStatement(TokenTaker& tokens, NameStack& names)
 {
     auto first = tokens.peek();
     if (first == Symbol::WHILE || first == Symbol::IF) {
-        // only if and while do not require semicolons
+        // only if, while, and for do not require semicolons
         return parseStatementConditional(tokens, names);
+    } else if (first == Symbol::FOR) {
+        return parseFor(tokens, names);
     } else {
         TokenTaker subtokens = takeUntil(tokens, Symbol::LINESEP);
         if (subtokens.contains(Symbol::ASSIGN)) {

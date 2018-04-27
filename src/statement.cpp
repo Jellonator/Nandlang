@@ -63,9 +63,10 @@ void StatementAssign::resolve(State& state) const
 void StatementAssign::check(const State& state) const
 {
     checkExpressions(state, m_expressions);
-    if (m_variables.size() != countOutputs(state, m_expressions)) {
+    auto count = countOutputs(state, m_expressions);
+    if (m_variables.size() != count) {
         std::stringstream s;
-        s << "Not enough outputs for assignment.";
+        s << "Not enough outputs for assignment; Expected " << m_variables.size() << ", " << " got " << count;
         throwError(s.str());
     }
 }
@@ -115,9 +116,10 @@ void StatementVariable::resolve(State& state) const
 void StatementVariable::check(const State& state) const
 {
     checkExpressions(state, m_expressions);
-    if (m_variables.size() != countOutputs(state, m_expressions)) {
+    auto count = countOutputs(state, m_expressions);
+    if (m_variables.size() != count) {
         std::stringstream s;
-        s << "Not enough outputs for variables.";
+        s << "Not enough outputs for variables; Expected " << m_variables.size() << ", " << " got " << count;
         throwError(s.str());
     }
 }
@@ -280,4 +282,55 @@ ConstantLevel StatementExpression::getConstantLevel(const State& state) const
 void StatementExpression::optimize(State& state)
 {
     m_expression->optimize(state);
+}
+
+StatementFor::StatementFor(const DebugInfo& debug, size_t iterations,
+    std::vector<ForData>&& fordata, std::vector<StatementPtr> block)
+: Statement(debug), m_iterations(iterations), m_fordata(std::move(fordata))
+, m_block(std::move(block)) {
+    m_size = 0;
+    for (const auto& data : m_fordata) {
+        m_size += data.size;
+    }
+}
+
+void StatementFor::resolve(State& state) const
+{
+    for (size_t i = 0; i < m_iterations; i ++) {
+        // push values
+        for (const auto& data : m_fordata) {
+            for (size_t j = 0; j < data.size; j ++) {
+                size_t pos = data.begin + data.step*i + j;
+                state.push(state.getVar(pos));
+            }
+        }
+        // execute statements
+        for (const auto& stmt : m_block) {
+            stmt->resolve(state);
+        }
+        // put values back (reverse order)
+        for (auto data = m_fordata.rbegin(); data != m_fordata.rend(); ++data) {
+            size_t j = data->size;
+            while (j > 0) {
+                j --;
+                size_t pos = data->begin + data->step*i + j;
+                state.setVar(pos, state.pop());
+            }
+        }
+    }
+}
+
+void StatementFor::check(const State& state) const
+{
+    checkStatements(state, m_block);
+}
+
+ConstantLevel StatementFor::getConstantLevel(const State& state) const
+{
+    return getStatementsConstantLevel(state, m_block);
+}
+
+void StatementFor::optimize(State& state)
+{
+    optimizeStatements(state, m_block);
 }

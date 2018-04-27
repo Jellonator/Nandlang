@@ -53,7 +53,7 @@ NameStackDef NameStack::insertIndexed(const Token& token, size_t index)
     return def;
 }
 
-NameStackDef NameStack::getPosition(const Token& token)
+NameStackDef NameStack::getPosition(const Token& token) const
 {
     if (token.getIdentifier() == ignoreIdentifier) {
         NameStackDef def;
@@ -70,12 +70,12 @@ NameStackDef NameStack::getPosition(const Token& token)
         if (m_prev && m_names.count(token.getIdentifier()) == 0) {
             return m_prev->getPosition(token);
         } else {
-            return m_names[token.getIdentifier()];
+            return m_names.at(token.getIdentifier());
         }
     }
 }
 
-NameStackDef NameStack::getPositionIndexed(const Token& token, size_t index)
+NameStackDef NameStack::getPositionIndexed(const Token& token, size_t index) const
 {
     if (token.getIdentifier() == ignoreIdentifier) {
         NameStackDef def;
@@ -95,7 +95,7 @@ NameStackDef NameStack::getPositionIndexed(const Token& token, size_t index)
             if (m_prev && m_names.count(token.getIdentifier()) == 0) {
                 return m_prev->getPositionIndexed(token, index);
             } else {
-                NameStackDef def = m_names[token.getIdentifier()];
+                NameStackDef def = m_names.at(token.getIdentifier());
                 if (index >= def.size) {
                     std::stringstream s;
                     s << "Index out of bounds ";
@@ -107,6 +107,11 @@ NameStackDef NameStack::getPositionIndexed(const Token& token, size_t index)
             }
         }
     }
+}
+
+void NameStack::removeName(const std::string& name)
+{
+    m_names.erase(name);
 }
 
 size_t NameStack::size()

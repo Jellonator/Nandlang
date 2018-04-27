@@ -24,9 +24,12 @@ public:
     /// Similar to insert, but takes an index as well
     NameStackDef insertIndexed(const Token& token, size_t index);
     /// Get the position of the given variable
-    NameStackDef getPosition(const Token& token);
+    NameStackDef getPosition(const Token& token) const;
     /// Similar to getPosition, but takes an index as well
-    NameStackDef getPositionIndexed(const Token& token, size_t index);
+    NameStackDef getPositionIndexed(const Token& token, size_t index) const;
+    /// Remove the given position without changing any other positions
+    // (good for overriding positions)
+    void removeName(const std::string& name);
     /// Get the number of elements in this specific NameStack (not parents)
     size_t size();
 };

@@ -8,7 +8,7 @@
 /// Represents a particular symbol type.
 enum class Symbol {
     LITERAL, COMMA, BLOCK, IOSEP, PARENTHESIS, IDENTIFIER, ASSIGN,
-    FUNCTION, WHILE, IF, VAR, LINESEP, NAND, INDEX, ELSE, NONE
+    FUNCTION, WHILE, IF, VAR, LINESEP, NAND, INDEX, ELSE, FOR, NONE
 };
 
 /// Special identifier used for ignoring parts of a function's output

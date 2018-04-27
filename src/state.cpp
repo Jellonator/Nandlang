@@ -47,7 +47,6 @@ void fn_malloc(State& state) {
     // non-serious language I'm sure it's okay.
     size_t size = state.popValue<size_t>();
     void *ptr = malloc(size);
-    std::cout << ptr << std::endl;
     state.pushValue(size_t(ptr));
 }
 
@@ -80,10 +79,10 @@ const std::map<std::string, FunctionExternal> stdlib = {
     {"putc",   {fn_putc,   8, 0, ConstantLevel::GLOBAL}},
     {"getc",   {fn_getc,   0, 8, ConstantLevel::GLOBAL}},
     {"iogood", {fn_iogood, 0, 1, ConstantLevel::GLOBAL}},
-    {"malloc", {fn_malloc, pointerSize, pointerSize, ConstantLevel::LOCAL}},
-    {"free",   {fn_free,   pointerSize, 0, ConstantLevel::LOCAL}},
-    {"deref",  {fn_deref,  pointerSize, 1, ConstantLevel::LOCAL}},
-    {"assign", {fn_assign, pointerSize+1, 0, ConstantLevel::LOCAL}}
+    {"malloc", {fn_malloc,   pointerSize, pointerSize, ConstantLevel::LOCAL}},
+    {"free",   {fn_free,     pointerSize, 0, ConstantLevel::LOCAL}},
+    {"deref",  {fn_deref,    pointerSize, 1, ConstantLevel::LOCAL}},
+    {"assign", {fn_assign, 1+pointerSize, 0, ConstantLevel::LOCAL}}
 };
 
 State::State()
