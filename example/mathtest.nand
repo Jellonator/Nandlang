@@ -31,8 +31,11 @@ function xor(a, b : out) {
 
 // Full adder. Outputs value as V and carry as C.
 function add(a, b, cin : v, cout) {
-	v = xor(cin, xor(a, b));
-	cout = or(and(a, b), and(xor(a, b), cin));
+	var nab = a ! b;
+	v = (a ! nab) ! (b ! nab);
+	var nvc = v ! cin;
+	cout = nvc ! nab;
+	v = (v ! nvc) ! (cin ! nvc);
 }
 
 // 8 bit adder

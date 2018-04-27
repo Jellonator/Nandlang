@@ -1,0 +1,190 @@
+function not(in : out) {
+    out = in ! in;
+}
+
+function or(a, b : out) {
+    out = not(a) ! not(b);
+}
+
+function eq(a, b : out) {
+	out = not(xor(a, b));
+}
+
+function xor(a, b : out) {
+	out = or(and(a, not(b)), and(not(a), b));
+}
+
+function and(a, b : out) {
+    out = not(a ! b);
+}
+
+function add(a, b, cin : v, cout) {
+    var nab = a ! b;
+    v = (a ! nab) ! (b ! nab);
+    var nvc = v ! cin;
+    cout = nvc ! nab;
+    v = (v ! nvc) ! (cin ! nvc);
+}
+
+function addptr(a[ptr], b[ptr] : o[ptr]) {
+    var c = 0;
+    for (:a, :b, :o) {
+        o, c = add(a, b, c);
+    }
+}
+
+function complementptr(v[ptr] : o[ptr]) {
+    for (v, o) {
+        o = v!v;
+    }
+    o = addptr(o, 1[ptr]);
+}
+
+function complement8(v[8] : o[8]) {
+    for (v, o) {
+        o = v!v;
+    }
+    o = add8(o, 1[8]);
+}
+
+function subptr(a[ptr], b[ptr] : o[ptr]) {
+    o = addptr(a, complementptr(b));
+}
+
+function sub8(a[8], b[8] : o[8]) {
+    o = add8(a, complement8(b));
+}
+
+function add8(a[8], b[8] : o[8]) {
+    var c = 0;
+    for (:a, :b, :o) {
+        o, c = add(a, b, c);
+    }
+}
+
+function eq8(a[8], b[8] : out) {
+    out = and(
+        and(and(eq(a[1], b[1]), eq(a[2], b[2])),
+            and(eq(a[3], b[3]), eq(a[4], b[4]))),
+        and(and(eq(a[5], b[5]), eq(a[6], b[6])),
+            and(eq(a[7], b[7]), eq(a[0], b[0]))));
+}
+
+function eqptr(a[ptr], b[ptr] : out) {
+    out = 1;
+    for (a[8], b[8]) {
+        if not(eq8(a, b)) {
+            out = 0;
+        }
+    }
+}
+
+function puthex4(value[4]) {
+    // 0000 0   0001 1   0010 2   0011 3   0100 4   0101 5   0110 6   0111 7
+    // 1000 8   1001 9   1010 A   1011 B   1100 C   1101 D   1110 E   1111 F
+    var c[8] = 3[4], value;
+    if (and(value[0], or(value[1], value[2]))) {
+        c = add8(c, 7[8]);
+    }
+    putc(c);
+}
+
+function puthexptr(value[ptr]) {
+    for (value[4]) {
+        puthex4(value);
+    }
+}
+
+function puthex8(value[8]) {
+    for (value[4]) {
+        puthex4(value);
+    }
+}
+
+function deref8(ptr[ptr] : value[8]) {
+    var offset[ptr] = 0[ptr];
+    for (value) {
+        value = deref(addptr(ptr, offset));
+        offset = addptr(offset, 1[ptr]);
+    }
+}
+
+function assign8(ptr[64], value[8]) {
+    var offset[ptr] = 0[ptr];
+    for (value) {
+        assign(addptr(ptr, offset), value);
+        offset = addptr(offset, 1[ptr]);
+    }
+}
+
+function fakerun(program[ptr], programptr[ptr] : newprogramptr[ptr]) {
+    var c[8] = deref8(addptr(program, programptr));
+    while not(eq8(c, ']')) {
+        if eq8(c, '[') {
+            programptr = addptr(programptr, 8[ptr]);
+            programptr = fakerun(program, programptr);
+        }
+        programptr = addptr(programptr, 8[ptr]);
+        c = deref8(addptr(program, programptr));
+    }
+    newprogramptr = programptr;
+}
+
+function run(data[ptr], program[ptr], dataptr[ptr], programptr[ptr] : newdataptr[ptr], newprogramptr[ptr]) {
+    var c[8] = deref8(addptr(program, programptr));
+    while not(eq8(c, ']')) {
+        if eq8(c, '>') {
+            dataptr = addptr(dataptr, 8[ptr]);
+        }
+        if eq8(c, '<') {
+            dataptr = subptr(dataptr, 8[ptr]);
+        }
+        if eq8(c, '+') {
+            var pos[ptr] = addptr(dataptr, data);
+            assign8(pos, add8(deref8(pos), 1[8]));
+        }
+        if eq8(c, '-') {
+            var pos[ptr] = addptr(dataptr, data);
+            assign8(pos, sub8(deref8(pos), 1[8]));
+        }
+        if eq8(c, '.') {
+            var pos[ptr] = addptr(dataptr, data);
+            putc(deref8(pos));
+        }
+        if eq8(c, ',') {
+            var pos[ptr] = addptr(dataptr, data);
+            assign8(pos, getc());
+        }
+        if eq8(c, '[') {
+            programptr = addptr(programptr, 8[ptr]);
+            while not(eq8(deref8(addptr(dataptr, data)), 0[8])) {
+                dataptr, _[ptr] = run(data, program, dataptr, programptr);
+            }
+            programptr = fakerun(program, programptr);
+        }
+        programptr = addptr(programptr, 8[ptr]);
+        c = deref8(addptr(program, programptr));
+    }
+    newdataptr = dataptr;
+    newprogramptr = programptr;
+}
+
+function main()
+{
+    var size[ptr] = 24000[ptr]; // 3000B of data
+    var mem[ptr] = malloc(size);
+    var program[ptr] = malloc(8388608[ptr]); // 1MB of program data
+    var i[ptr] = 0[ptr];
+    while iogood() {
+        assign8(addptr(i, program), getc());
+        i = addptr(i, 8[ptr]);
+    }
+    assign8(addptr(i, program), ']');
+    i = 0[ptr];
+    while not(eqptr(i, size)) {
+        assign8(addptr(i, mem), 0[8]);
+        i = addptr(i, 8[ptr]);
+    }
+    _[ptr], _[ptr] = run(mem, program, 0[ptr], 0[ptr]);
+    endl();
+}
