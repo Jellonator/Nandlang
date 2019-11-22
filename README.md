@@ -3,7 +3,7 @@ Nandlang version 1.2
 
 A programming language based on NAND completeness.
 
-Created by James Beedie
+Created by Jocelyn Beedie
 
 ## About
 Do you hate modern programming languages? All pretentious with fancy mumbo
@@ -26,12 +26,9 @@ assignment.
 
 ### What this is not
 This is not a serious language with any practical value whatsoever. I highly
-doubt that anyone actually wants to program an entire program using just bits.
-
-I'm also not currently taking pull requests for this repository because I
-haven't yet submitted this as a final project for my computer science class yet,
-and all of the code needs to be my own. I may reconsider after May 12th, which
-is when this will be submitted.
+doubt that anyone actually wants to design an entire program using just bits.
+This implementation of the language uses an interpreter, and is not
+very performant, which limits its applications.
 
 ## Downloading
 You can download the latest release for this program from
@@ -262,8 +259,11 @@ using a single underscore as an identifier:
 ```Javascript
 // full adder
 function add(a, b, cin : v, cout) {
-    v = xor(cin, xor(a, b));
-    cout = or(and(a, b), and(xor(a, b), cin));
+    var nab = a ! b;
+    v = (a ! nab) ! (b ! nab);
+    var nvc = v ! cin;
+    cout = nvc ! nab;
+    v = (v ! nvc) ! (cin ! nvc);
 }
 
 function main() {
@@ -304,7 +304,7 @@ It should be noted that arrays in Nandlang are really just syntactic sugar.
 There is no difference between declaring `b[4]` and `b0, b1, b2, b3`.
 
 A special size exists called `[ptr]` which represents the system's pointer size.
-On 32 bit systems `[ptr]` is equivalent to `[32]`, and on 64 bit systems `[64]`
+On 32 bit systems `[ptr]` is equivalent to `[32]`, and on 64 bit systems `[ptr]`
 is equivalent `[64]`.
 
 ### For statements
